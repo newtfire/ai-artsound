@@ -215,12 +215,34 @@ def stream_with_uncertainty(prompt: str):
 # ── Entry Point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    prompt = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else PROMPT
-    try:
-        stream_with_uncertainty(prompt)
-    except requests.exceptions.ConnectionError:
-        print(f"\n{COLOR_ERROR}Cannot reach Ollama at {OLLAMA_URL}{RESET}")
-        print("Start it with:  ollama serve")
-        sys.exit(1)
-    except KeyboardInterrupt:
-        print(f"\n\n{DIM}Interrupted.{RESET}\n")
+    # One-shot mode: python uncertainty-monitor.py "your prompt here"
+    if len(sys.argv) > 1:
+        prompt = " ".join(sys.argv[1:])
+        try:
+            stream_with_uncertainty(prompt)
+        except requests.exceptions.ConnectionError:
+            print(f"\n{COLOR_ERROR}Cannot reach Ollama at {OLLAMA_URL}{RESET}")
+            print("Start it with:  ollama serve")
+            sys.exit(1)
+
+    # Interactive mode: just run python uncertainty-monitor.py
+    else:
+        print(f"\n{BOLD}{COLOR_HEADER}━━━ Uncertainty Monitor — Interactive Mode ━━━{RESET}")
+        print(f"{DIM}Press Enter to use the default prompt. Type 'quit' to exit.{RESET}\n")
+        while True:
+            try:
+                user_input = input(f"{COLOR_LABEL}Enter a prompt:{RESET} ").strip()
+                if user_input.lower() in ("quit", "exit", "q"):
+                    print(f"\n{DIM}Goodbye.{RESET}\n")
+                    break
+                prompt = user_input if user_input else PROMPT
+                if not user_input:
+                    print(f"{DIM}Using default prompt.{RESET}")
+                stream_with_uncertainty(prompt)
+                print()  # breathing room between runs
+            except requests.exceptions.ConnectionError:
+                print(f"\n{COLOR_ERROR}Cannot reach Ollama at {OLLAMA_URL}{RESET}")
+                print("Start it with:  ollama serve\n")
+            except KeyboardInterrupt:
+                print(f"\n\n{DIM}Interrupted.{RESET}\n")
+                break
