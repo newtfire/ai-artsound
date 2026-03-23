@@ -149,10 +149,11 @@ def stream_with_uncertainty(prompt: str):
 
     payload = {
         "model": MODEL, "prompt": prompt, "stream": True,
-        "logprobs": True, 
+        "logprobs": True,
+        "top_logprobs": TOP_K_CANDIDATES,   # ← top level, not inside options
         "options": {"temperature": 0.8,
-                    "top_k": TOP_K_CANDIDATES, },
-    }
+                "top_k": TOP_K_CANDIDATES, },
+}
     response = requests.post(OLLAMA_URL, json=payload, stream=True)
     response.raise_for_status()
 
@@ -162,15 +163,16 @@ def stream_with_uncertainty(prompt: str):
         if not raw_line:
             continue
         chunk = json.loads(raw_line)
+        # print(f"\nDEBUG: {chunk}")   # for debugging the logprobs output format from Ollama. Remove or comment out when ready.
         token = chunk.get("response", "")
 
         # Parse logprobs (Ollama format varies slightly by version)
-        logprob_data = chunk.get("logprobs") or {}
+        logprob_data = chunk.get("logprobs") or []
         top_logprobs = {}
-        if isinstance(logprob_data, dict):
-            tlp = logprob_data.get("top_logprobs", [{}])
-            if isinstance(tlp, list) and tlp:
-                top_logprobs = tlp[0]
+        if isinstance(logprob_data, list) and logprob_data:
+            entry = logprob_data[0]
+            for candidate in entry.get("top_logprobs", []):
+                top_logprobs[candidate["token"]] = candidate["logprob"]
 
         score = compute_uncertainty(top_logprobs)
         token_log.append((token, score, top_logprobs))
