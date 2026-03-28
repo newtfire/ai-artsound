@@ -78,6 +78,11 @@ python -m venv .venv
 You'll know the virtual environment is active when your terminal prompt shows `(.venv)` at the start.
 
 ### 4. Install dependencies
+a. you need the requests library 
+
+```bash
+pip install requests
+```
 
 ```bash
 pip install -r requirements.txt
@@ -99,6 +104,12 @@ You can also pass a prompt directly as a command-line argument for a single run:
 
 ```bash
 python uncertainty-monitor.py "The thing that surprised me most was"
+```
+
+#### As you add new pip installations
+
+```bash
+pip freeze > requirements.txt
 ```
 
 ### Tips for interesting output
