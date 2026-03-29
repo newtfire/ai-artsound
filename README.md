@@ -15,6 +15,45 @@ We intend to develop this as an interactive art exhibit project.
 
 As the model generates each word (token), the script retrieves the probability the model assigned to that choice alongside its top alternative candidates. It computes a [Shannon entropy](https://en.wikipedia.org/wiki/Entropy_(information_theory)) score from those probabilities: a measure of how evenly spread the possibilities were. High entropy means the model was genuinely uncertain; low entropy means it was confident. This score drives the color display and the pacing of the output.
 
+### A bit more detail
+
+Shannon entropy is a calculation we're making *after* the model calculates probabilities for the next likely tokens. 
+
+In our Python script we have this line, which is pulling in information from our language model about the array of probabilities:
+
+```python
+probs = [math.exp(lp) for lp in top_logprobs.values()]
+```
+
+Here's the chain of events of what's happening with with each token's prediction, and how it relates to the Shannon entropy we're working with:
+
+```
+neural network
+      ↓
+   logits  (raw scores, any real number)
+      ↓
+  softmax  (converts to probabilities summing to 1.0)
+      ↓
+ log-probs  (what Ollama sends us: the  natural log of those probabilities)
+      ↓
+math.exp()  (we reverse the log to get probabilities back)
+      ↓
+Shannon entropy  (we measure how spread the distribution is)
+      ↓
+uncertainty score  (normalized to 0–1 and applied to our color / pause / visualization / sonification logic. 
+We're converting it to percentages for the token readouts)
+```
+
+## Why log-probs instead of probabilities directly?
+
+One natural follow-up question is why Ollama sends log-probabilities rather than plain probabilities. The practical reason is numerical stability — vocabulary probabilities can be extraordinarily small (like 10⁻³⁰), and floating-point arithmetic loses precision at those scales. Logarithms keep the numbers in a manageable range. This is also why the entropy formula uses `log` internally — it's working in the same space.
+
+## The temperature connection
+
+There's one more thread worth pulling. When you set `temperature` in the script, it's actually applied *before* softmax, by dividing all the logits by the temperature value:
+```
+logits_adjusted = logits / temperature
+
 ---
 
 ## Requirements
