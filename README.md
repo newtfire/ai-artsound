@@ -46,7 +46,7 @@ We're converting it to percentages for the token readouts)
 
 #### Why log-probs instead of probabilities directly?
 
-Ollama is sending us log-probabilities rather than plain probabilities, because token probabilities can be super small (like 10⁻³⁰), difficult to work with Logarithms keep the numbers in a manageable range. 
+Ollama is sending us probabilities in natural log form rather than plain probabilities, because token probabilities can be super small (like 10⁻³⁰), difficult to work with. Logarithms keep the numbers in a manageable range. 
 
 #### Adjusting the temperature
 
