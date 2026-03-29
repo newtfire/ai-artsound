@@ -44,15 +44,17 @@ uncertainty score  (normalized to 0–1 and applied to our color / pause / visua
 We're converting it to percentages for the token readouts)
 ```
 
-## Why log-probs instead of probabilities directly?
+#### Why log-probs instead of probabilities directly?
 
-One natural follow-up question is why Ollama sends log-probabilities rather than plain probabilities. The practical reason is numerical stability — vocabulary probabilities can be extraordinarily small (like 10⁻³⁰), and floating-point arithmetic loses precision at those scales. Logarithms keep the numbers in a manageable range. This is also why the entropy formula uses `log` internally — it's working in the same space.
+Ollama is sending us log-probabilities rather than plain probabilities, because token probabilities can be super small (like 10⁻³⁰), difficult to work with Logarithms keep the numbers in a manageable range. 
 
-## The temperature connection
+#### Adjusting the temperature
 
-There's one more thread worth pulling. When you set `temperature` in the script, it's actually applied *before* softmax, by dividing all the logits by the temperature value:
+There's one more thread worth pulling. We can adjust the `temperature` in the script, and that will be applied *before* softmax, by dividing all the logits by the temperature value:
+
 ```
 logits_adjusted = logits / temperature
+```
 
 ---
 
