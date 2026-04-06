@@ -50,7 +50,9 @@ Ollama is sending us probabilities in natural log form rather than plain probabi
 
 #### Adjusting the temperature
 
-There's one more thread worth pulling. We can adjust the `temperature` in the script, and that will be applied *before* softmax, by dividing all the logits by the temperature value:
+Here is another property we can tinker with: **temperature**, which adjusts the likelihood that low-probability responses are selected: Heightening the temperature can make for more "wild" random associations, and different models will have different recommended temperature settings for lucid responses.
+
+  We can adjust the `temperature` in the script, and that will be applied *before* softmax, by dividing all the logits by the temperature value:
 
 ```
 logits_adjusted = logits / temperature
@@ -77,7 +79,11 @@ On **macOS**, Ollama installs as a menu bar app and starts automatically at logi
 
 On **Windows**, Ollama runs as a background service after installation. Check the system tray for the icon.
 
-Once installed, pull the language model the project uses:
+### 1a. Pull in some models
+
+Once installed, pull the language models we are using in the project. We started with Qwen but are now evaluating small language models transparently trained on data that is not under copyright. This includes PleIAs, trained on the [Common Corpus dataset](https://huggingface.co/datasets/PleIAs/common_corpus), a 2.3 trillion-token dataset trained entirely on open source data. 
+
+#### To pull in Qwen with ollama (where we started):
 
 ```bash
 ollama pull qwen2.5:1.5b
@@ -85,9 +91,14 @@ ollama pull qwen2.5:1.5b
 
 This downloads about 1GB and only needs to be done once.
 
-### 2. Get the project files
+##### To pull in Qwen with alternative models using Common Corpus
+[See [Installing and Configuring with PleIAs Models](#installing-and-configuring-with-pleias-models) below! 
+You need to have worked through the rest of the setup and configured a Python environment to work with other models. 
 
-If you received a ZIP file, unzip it to a folder of your choice. If you're cloning from GitHub:
+### 2. Get the project files on your computer
+
+If you use git, clone this repo.
+If you downloaded/recieved a ZIP file for this project, unzip it to a folder of your choice. If you're cloning from GitHub:
 
 ```bash
 git clone https://github.com/YOUR-USERNAME/YOUR-REPO-NAME.git
@@ -169,7 +180,7 @@ All tunable parameters are at the top of `uncertainty-monitor.py`:
 
 | Variable | Default | What it does |
 |---|---|---|
-| `MODEL` | `qwen2.5:1.5b` | Which Ollama model to use |
+| `MODEL` | `??????` | Which Ollama model to use |
 | `UNCERTAINTY_THRESHOLD` | `0.55` | Score above which a hesitation pause triggers |
 | `MAX_PAUSE_SECONDS` | `2.0` | Maximum pause length at peak uncertainty |
 | `TOP_K_CANDIDATES` | `5` | How many alternative tokens to request per step |
@@ -177,6 +188,118 @@ All tunable parameters are at the top of `uncertainty-monitor.py`:
 
 The color palette is also editable — look for the `COLOR_*` variables in the color section of the file.
 
+---
+
+## Installing and Configuring with PleIAs Models
+
+#### To pull in Pleias-350m 
+(We will evaluate other PleIAs models, too, but this is a good starting point). 
+
+The installation is a little more involved because Pleias models are not in Ollama's library and must be downloaded from HuggingFace and
+imported manually. 
+
+##### Step 1: Activate your Python environment and install huggingface-cli 
+
+Make sure your virtual environment (.venv) is active:
+Then:
+
+```bash
+pip install huggingface_hub
+```
+
+Confirm that it works wtih:
+
+```bash
+huggingface-cli --version
+```
+
+##### Step 2: Download the Pleias model weights
+
+Run this from inside your project folder. The download is ~700MB and may take
+several minutes depending on your connection:
+
+```bash
+huggingface-cli download PleIAs/Pleias-350m-Preview \
+    --local-dir ./pleias-350m-src \
+    --local-dir-use-symlinks False
+```
+
+
+The `--local-dir-use-symlinks False` flag is essential — without it, Ollama will
+reject the files with an "insecure path" error.
+
+When complete, verify you have a real file (not a symlink) by checking the size:
+
+```bash
+ls -lh pleias-350m-src/model.safetensors
+```
+
+You should see something around 700MB. If it shows a tiny file with an arrow (->),
+the symlink flag didn't take — delete the folder and try again.
+
+##### Step 3: Create the model in Ollama
+
+A `Modelfile-pl-350m` is included in the repository. Run:
+
+```bash
+ollama create pleias-350m -f Modelfile-pl-350m
+```
+
+Ollama will convert the downloaded weights to its internal format. This may take
+a minute or two and will show a progress indicator.
+
+##### Step 4: Confirm the model is registered
+
+```bash
+ollama list
+```
+
+You should see `pleias-350m:latest` in the list.
+
+
+##### Step 5: Run the monitor with Pleias
+
+I have saved [a version of the uncertainty-monitor Python script](https://github.com/newtfire/ai-artsound/blob/main/uncertainty-monitor-alpha.py) to work with Pleias: **uncertainty-monitor-alpha.py** 
+
+We can adjust the Pleias models in this script by changing the MODEL variable, using the value we see in `ollama list`. 
+
+Currently, in uncertainty-monitor-alpha.py, this is set to Pleias 350m with 
+
+```python
+MODEL = "pleias-350m:latest"
+```
+Then run this script as usual:
+
+
+```bash
+python uncertainty-monitor.py
+```
+
+##### Recommended settings for Pleias in the script
+
+These are already set in the uncertainty-monitor-alpha.py, NOT the same settings as for rhe Qwen model.
+
+```python
+"options": {
+    "temperature": 0.2,       # PleIAs recommends low temperature
+    "repeat_penalty": 1.2,    # prevents repetitive looping
+    "top_k": TOP_K_CANDIDATES,
+    "num_predict": 80,        # hard cap — model doesn't self-terminate cleanly
+},
+```
+
+##### Cautions/Caveats with Pleias installations
+
+- The `ollama run hf.co/PleIAs/...` shortcut does NOT work for these models
+- Plain `curl` downloads a tiny Git LFS pointer file (~15 bytes), not the real model
+- `huggingface-cli` must be used with `--local-dir-use-symlinks False`, otherwise
+  Ollama will refuse to load the files with a security error
+- The RAG-specialized variants (Pleias-Pico, Pleias-Nano) do not respond well to
+  open-ended creative prompts (but are worth looking at just for fun).
+  - We should probably work with the `Preview` base models for this exhibit (including Pleias-350m).
+  
+  
+---
 ---
 
 ## Connecting to hardware (next stage)
