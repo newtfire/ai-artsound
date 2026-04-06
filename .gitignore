@@ -25,3 +25,5 @@ share/
 #GGUF model files
 *.gguf
 pleias-nano-src/
+pleias-350m-src/
+pleias-3b-src/
