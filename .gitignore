@@ -11,11 +11,16 @@ Thumbs.db
 .env/
 .idea/
 .venv
+.venv/
 venv/
 __pycache__/
+*.pyc
 Lib/
 # Scripts/
 etc/
 pyvenv.cfg
 share/
 .ipynb_checkpoints/
+
+#GGUF model files
+*.gguf
