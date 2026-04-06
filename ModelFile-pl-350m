@@ -1,0 +1,2 @@
+# Modelfile-pl-350m
+FROM ./pleias-350m-src
