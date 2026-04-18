@@ -14,20 +14,115 @@
 
 
 import requests, json, math, time, sys
+# Enable ANSI color support on Windows
+import os
+if os.name == "nt":
+    os.system("")   # triggers Windows 10+ ANSI mode in CMD/PowerShell
 # from datetime import datetime, timedelta
 # from dateutil import tz
 
+# ── Model Registry ────────────────────────────────────────────────────────────
+# Add or remove models here as you experiment.
+# "label" is what visitors see; "id" is the Ollama model identifier.
+
+MODELS = [
+    {
+        "label": "Qwen 2.5 (1.5B) — general language, web-trained",
+        "id":    "qwen2.5:1.5b",
+    },
+    {
+        "label": "Pleias 350m — copyright-free, literary register",
+        "id":    "pleias-350m:latest",
+    },
+    {
+        "label": "Pleias Pico (350M) — copyright-free, RAG-specialized",
+        "id":    "hf.co/PleIAs/Pleias-Pico-GGUF:latest",
+    },
+    {
+        "label": "Pleias Nano (1.2B) — copyright-free, RAG-specialized",
+        "id":    "pleias-nano:latest",
+    },
+    {
+        "label": "Llama 3.2 (3B) — Meta, general language",
+        "id":    "llama3.2:3b",
+    },
+    {
+        "label": "Llama 3.2 (1B) — Meta, general language, very small",
+        "id":    "llama3.2:1b",
+    },
+]
+
+DEFAULT_MODEL_INDEX = 0   # which model to use if visitor skips selection
+
 # ── Configuration ─────────────────────────────────────────────────────────────
 
-MODEL              = "qwen2.5:1.5b"
-OLLAMA_URL         = "http://localhost:11434/api/generate"
-TOP_K_CANDIDATES   = 5
-UNCERTAINTY_THRESHOLD = 0.55   # 0.0–1.0; tune by watching output
-MAX_PAUSE_SECONDS  = 2.0       # pause length at maximum uncertainty
+OLLAMA_URL            = "http://localhost:11434/api/generate"
+TOP_K_CANDIDATES      = 5
+UNCERTAINTY_THRESHOLD = 0.55
+MAX_PAUSE_SECONDS     = 2.0
 PROMPT = (
     "Describe the feeling of standing at the edge of a vast, dark ocean "
     "at night, in two or three sentences."
 )
+
+
+# ── ANSI (Shell) Display / RGB Color Variables ─────────────────────────────────────
+RESET = "\033[0m"
+BOLD = "\033[1m"
+DIM = "\033[2m"
+
+
+# These color settings are for running in the shell.
+# They set true-color ANSI foreground for programming colors in
+# the terminal.  We'll have to replace this function's body
+# when ready to send color to external hardware."""
+def rgb(r: int, g: int, b: int) -> str:
+    """These color settings are for running in the shell.
+    Replace the return value with hardware output when ready."""
+    return f"\033[38;2;{r};{g};{b}m"
+
+    # FOR EXHIBIT: Add a line to send RGB values to external hardware.
+    # send_to_hardware(r, g, b)   # your Arduino/MCP call
+    # return f"\033[38;2;{r};{g};{b}m"   # still colors the terminal too.
+
+
+# ─── RGB Color Palette! (Edit/adjust) ───────────────────────
+
+COLOR_CONFIDENT = rgb(100, 200, 255)  # cool blue  — low uncertainty
+COLOR_UNCERTAIN = rgb(255, 200, 60)  # warm amber — mid uncertainty
+COLOR_HESITATING = rgb(255, 60, 40)  # hot red    — high uncertainty
+COLOR_LABEL = rgb(180, 180, 180)  # soft grey  — UI chrome
+COLOR_HIGHLIGHT = rgb(220, 120, 255)  # violet     — hesitation marker
+COLOR_ERROR = rgb(255, 60, 40)  # same red as COLOR_HESITATING, or adjust to taste
+COLOR_HEADER = rgb(100, 220, 200)  # teal — section titles
+
+
+# COLOR_HEADER is reserved for future use
+
+# Function to select a model! 
+def select_model() -> dict:
+    """Prompt the user to choose a model. Returns the selected model dict."""
+    print(f"\n{BOLD}{COLOR_HEADER}Available models:{RESET}\n")
+    for i, m in enumerate(MODELS):
+        print(f"  {COLOR_LABEL}{i + 1}.{RESET} {m['label']}")
+        print(f"     {DIM}{m['id']}{RESET}")
+    print()
+
+    while True:
+        raw = input(
+            f"{COLOR_LABEL}Choose a model [1–{len(MODELS)}, "
+            f"or Enter for default ({DEFAULT_MODEL_INDEX + 1})]: {RESET}"
+        ).strip()
+
+        if not raw:
+            chosen = MODELS[DEFAULT_MODEL_INDEX]
+            print(f"{DIM}Using default: {chosen['label']}{RESET}")
+            return chosen
+        if raw.isdigit() and 1 <= int(raw) <= len(MODELS):
+            return MODELS[int(raw) - 1]
+        print(f"{COLOR_ERROR}Please enter a number between 1 and {len(MODELS)}.{RESET}")
+
+
 
 # ── Uncertainty Calculation ───────────────────────────────────────────────────
 def compute_uncertainty(top_logprobs: dict) -> float:
@@ -43,34 +138,7 @@ def compute_uncertainty(top_logprobs: dict) -> float:
     max_entropy = math.log2(len(probs)) if len(probs) > 1 else 1.0
     return entropy / max_entropy if max_entropy > 0 else 0.0
 
-# ── ANSI (Shell) Display / RGB Color Variables ─────────────────────────────────────
-RESET = "\033[0m"
-BOLD  = "\033[1m"
-DIM   = "\033[2m"
 
-# These color settings are for running in the shell. 
-# They set true-color ANSI foreground for programming colors in
-# the terminal.  We'll have to replace this function's body
-# when ready to send color to external hardware."""
-def rgb(r: int, g: int, b: int) -> str:
-    """These color settings are for running in the shell.
-    Replace the return value with hardware output when ready."""
-    return f"\033[38;2;{r};{g};{b}m"
-    
-    # FOR EXHIBIT: Add a line to send RGB values to external hardware.
-    # send_to_hardware(r, g, b)   # your Arduino/MCP call
-    # return f"\033[38;2;{r};{g};{b}m"   # still colors the terminal too.
-
-# ─── RGB Color Palette! (Edit/adjust) ───────────────────────
-
-COLOR_CONFIDENT  = rgb(100, 200, 255)   # cool blue  — low uncertainty
-COLOR_UNCERTAIN  = rgb(255, 200,  60)   # warm amber — mid uncertainty  
-COLOR_HESITATING = rgb(255,  60,  40)   # hot red    — high uncertainty
-COLOR_LABEL      = rgb(180, 180, 180)   # soft grey  — UI chrome
-COLOR_HIGHLIGHT  = rgb(220, 120, 255)   # violet     — hesitation marker
-COLOR_ERROR = rgb(255, 60, 40)   # same red as COLOR_HESITATING, or adjust to taste
-COLOR_HEADER = rgb(100, 220, 200)   # teal — section titles
-# COLOR_HEADER is reserved for future use
 
 def uncertainty_color(score: float) -> str:
     """
@@ -138,9 +206,10 @@ def on_uncertainty_event(token: str, score: float, candidates: dict):
 
 # ── Main Stream Loop ─────────────────────────────────────────────────────────────
 
-def stream_with_uncertainty(prompt: str):
+def stream_with_uncertainty(prompt: str, model: dict):
     print(f"\n{BOLD}{COLOR_LABEL}━━━ Uncertainty Monitor ━━━{RESET}")
-    print(f"{DIM}Model: {MODEL}  |  Threshold: {UNCERTAINTY_THRESHOLD}{RESET}\n")
+    print(f"{DIM}Model: {model['label']}{RESET}")
+    print(f"{DIM}Threshold: {UNCERTAINTY_THRESHOLD}{RESET}\n")
     print(f"{BOLD}Prompt:{RESET} {prompt}\n")
     print(f"{BOLD}{'─'*80}{RESET}\n")
     print(f"{COLOR_CONFIDENT}blue = confident{RESET}  "
@@ -148,7 +217,7 @@ def stream_with_uncertainty(prompt: str):
       f"{COLOR_HESITATING}red = hesitating{RESET}\n")
 
     payload = {
-        "model": MODEL, "prompt": prompt, "stream": True,
+        "model": model['id'], "prompt": prompt, "stream": True,
         "logprobs": True,
         "top_logprobs": TOP_K_CANDIDATES,   # ← top level, not inside options
         "options": {"temperature": 0.8,
@@ -215,31 +284,38 @@ def stream_with_uncertainty(prompt: str):
 # ── Entry Point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    # One-shot mode: python uncertainty-monitor.py "your prompt here"
     if len(sys.argv) > 1:
+        # One-shot mode: model selection not supported, uses default
         prompt = " ".join(sys.argv[1:])
         try:
-            stream_with_uncertainty(prompt)
+            stream_with_uncertainty(prompt, MODELS[DEFAULT_MODEL_INDEX])
         except requests.exceptions.ConnectionError:
             print(f"\n{COLOR_ERROR}Cannot reach Ollama at {OLLAMA_URL}{RESET}")
             print("Start it with:  ollama serve")
             sys.exit(1)
-
-    # Interactive mode: just run python uncertainty-monitor.py
     else:
         print(f"\n{BOLD}{COLOR_HEADER}━━━ Uncertainty Monitor — Interactive Mode ━━━{RESET}")
-        print(f"{DIM}Press Enter to use the default prompt. Type 'quit' to exit.{RESET}\n")
+        print(f"{DIM}Press Enter to use defaults. Type 'quit' to exit.{RESET}")
+
+        current_model = select_model()   # ← select once at startup
+
         while True:
             try:
-                user_input = input(f"{COLOR_LABEL}Enter a prompt:{RESET} ").strip()
+                user_input = input(f"\n{COLOR_LABEL}Enter a prompt "
+                                   f"(or 'm' to switch model): {RESET}").strip()
+
                 if user_input.lower() in ("quit", "exit", "q"):
                     print(f"\n{DIM}Goodbye.{RESET}\n")
                     break
+                if user_input.lower() == "m":
+                    current_model = select_model()
+                    continue
                 prompt = user_input if user_input else PROMPT
                 if not user_input:
                     print(f"{DIM}Using default prompt.{RESET}")
-                stream_with_uncertainty(prompt)
-                print()  # breathing room between runs
+                stream_with_uncertainty(prompt, current_model)
+                print()
+
             except requests.exceptions.ConnectionError:
                 print(f"\n{COLOR_ERROR}Cannot reach Ollama at {OLLAMA_URL}{RESET}")
                 print("Start it with:  ollama serve\n")
