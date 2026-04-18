@@ -31,6 +31,14 @@ MODELS = [
         "id":    "qwen2.5:1.5b",
     },
     {
+        "label": "OLMo 2 (7B) — Allen AI, open science, transparent training",
+        "id":    "olmo2:7b",
+    },
+    {
+        "label": "OLMo 2 (13B) — Allen AI, open science, larger model",
+        "id":    "olmo2:13b",
+    },
+    {
         "label": "Pleias 350m — copyright-free, literary register",
         "id":    "pleias-350m:latest",
     },
@@ -52,7 +60,67 @@ MODELS = [
     },
 ]
 
+# Models that require manual setup (can't be pulled via Ollama)
+MANUAL_SETUP_MODELS = ["pleias-350m:latest", "pleias-nano:latest"]
+
 DEFAULT_MODEL_INDEX = 0   # which model to use if visitor skips selection
+
+# ── Check if you have the  models  ────────────────────────────────────────────────────────────
+# ebb: This next function checks if you have a model locally, and if you don't, it pulls it in
+# via ollama if it's possible to do that. But if it's a
+def ensure_model_available(model_id: str) -> bool:
+    """
+    Check if a model is available locally. If not, offer to pull it.
+    Returns True if the model is ready, False if unavailable.
+    """
+    # Ask Ollama what models are installed
+    try:
+        response = requests.get("http://localhost:11434/api/tags")
+        response.raise_for_status()
+        installed = [m["name"] for m in response.json().get("models", [])]
+    except requests.exceptions.ConnectionError:
+        print(f"\n{COLOR_ERROR}Cannot reach Ollama at {OLLAMA_URL}{RESET}")
+        print("Start it with:  ollama serve")
+        sys.exit(1)
+
+    if model_id in installed:
+        return True
+    else:
+        if model_id in MANUAL_SETUP_MODELS:
+            print(f"\n{COLOR_UNCERTAIN}'{model_id}' requires manual setup.{RESET}")
+            print(f"{DIM}See README: Installing and Configuring with PleIAs Models{RESET}")
+            return False
+
+    # Model not found — offer to pull it
+    print(f"\n{COLOR_UNCERTAIN}Model '{model_id}' is not installed.{RESET}")
+    answer = input(f"{COLOR_LABEL}Pull it now? This may take several minutes. [y/n]: {RESET}").strip().lower()
+    if answer != "y":
+        return False
+
+    print(f"{DIM}Pulling {model_id}...{RESET}")
+    try:
+        pull_response = requests.post(
+            "http://localhost:11434/api/pull",
+            json={"name": model_id},
+            stream=True
+        )
+        pull_response.raise_for_status()
+        for line in pull_response.iter_lines():
+            if line:
+                status = json.loads(line)
+                msg = status.get("status", "")
+                completed = status.get("completed", 0)
+                total = status.get("total", 0)
+                if total:
+                    pct = completed / total * 100
+                    print(f"\r{DIM}{msg}: {pct:.1f}%{RESET}", end="", flush=True)
+                else:
+                    print(f"\r{DIM}{msg}{RESET}", end="", flush=True)
+        print(f"\n{COLOR_CONFIDENT}Done.{RESET}\n")
+        return True
+    except Exception as e:
+        print(f"\n{COLOR_ERROR}Pull failed: {e}{RESET}")
+        return False
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 
@@ -116,13 +184,20 @@ def select_model() -> dict:
 
         if not raw:
             chosen = MODELS[DEFAULT_MODEL_INDEX]
-            print(f"{DIM}Using default: {chosen['label']}{RESET}")
-            return chosen
+            if ensure_model_available(chosen["id"]):
+                print(f"{DIM}Using default: {chosen['label']}{RESET}")
+                return chosen
+            else:
+                print(f"{COLOR_ERROR}Default model unavailable. Please select another.{RESET}")
+                continue
         if raw.isdigit() and 1 <= int(raw) <= len(MODELS):
-            return MODELS[int(raw) - 1]
+            chosen = MODELS[int(raw) - 1]
+            if ensure_model_available(chosen["id"]):
+                return chosen
+            else:
+                print(f"{COLOR_ERROR}Skipping — please choose another model.{RESET}")
+                continue  # loop back to prompt again
         print(f"{COLOR_ERROR}Please enter a number between 1 and {len(MODELS)}.{RESET}")
-
-
 
 # ── Uncertainty Calculation ───────────────────────────────────────────────────
 def compute_uncertainty(top_logprobs: dict) -> float:
