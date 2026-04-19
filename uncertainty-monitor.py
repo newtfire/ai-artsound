@@ -393,7 +393,7 @@ def on_uncertainty_event(token: str, score: float, candidates: dict):
 
 # ── Main Streaming Function! ─────────────────────────────────────────────────────────────
 
-def stream_with_uncertainty(prompt: str, model: dict):
+def stream_with_uncertainty(prompt: str, model: dict, logger: SessionLogger = None):
     print(f"\n{BOLD}{COLOR_LABEL}━━━ Uncertainty Monitor ━━━{RESET}")
     print(f"{DIM}Model: {model['label']}{RESET}")
     print(f"{DIM}Threshold: {UNCERTAINTY_THRESHOLD}{RESET}\n")
@@ -473,6 +473,15 @@ def stream_with_uncertainty(prompt: str, model: dict):
     print(f"\n{DIM}Tune: UNCERTAINTY_THRESHOLD, MAX_PAUSE_SECONDS, PROMPT at top of file.")
     print(f"Wire up: add trigger code to on_uncertainty_event().{RESET}\n")
 
+# ── Logging ──────────────────────────────────────────────────────────────
+    if logger:
+        settings = {
+            "temperature":    model.get("temperature", 0.8),
+            "num_predict":    model.get("num_predict", 200),
+            "repeat_penalty": model.get("repeat_penalty", 1.1),
+        }
+        logger.log_response(prompt, token_log, settings)
+
 # ── User Entry Point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
@@ -490,6 +499,7 @@ if __name__ == "__main__":
         print(f"{DIM}Press Enter to use defaults. Type 'quit' to exit.{RESET}")
 
         current_model = select_model()   # ← select once at startup
+        logger = SessionLogger(current_model) # initiate the log!
 
         while True:
             try:
@@ -501,6 +511,7 @@ if __name__ == "__main__":
                     break
                 if user_input.lower() == "m":
                     current_model = select_model()
+                    logger = SessionLogger(current_model)  # Start a new log session file for new model
                     continue
                 if user_input.lower() == "s":
                     current_model = adjust_settings(current_model)
@@ -508,7 +519,7 @@ if __name__ == "__main__":
                 prompt = user_input if user_input else PROMPT
                 if not user_input:
                     print(f"{DIM}Using default prompt.{RESET}")
-                stream_with_uncertainty(prompt, current_model)
+                stream_with_uncertainty(prompt, current_model, logger)
                 print()
 
             except requests.exceptions.ConnectionError:
