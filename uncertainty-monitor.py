@@ -22,33 +22,43 @@ if os.name == "nt":
 # from dateutil import tz
 
 # ── Model Registry ────────────────────────────────────────────────────────────
-# Add or remove models here as you experiment.
+# Add or remove models from the python dictionary here as you experiment.
 # "label" is what visitors see; "id" is the Ollama model identifier.
+# "temperature" gives a default temp and "num_predict" sets the number of tokens to output.
+# repeat_penalty tries to prevent a model from looping/repeating chunks of its response.
 
 MODELS = [
     {
         "label": "Qwen 2.5 (1.5B) — general language, web-trained",
         "id":    "qwen2.5:1.5b",
+        "temperature": 0.8,
+        "num_predict": 200,
     },
     {
         "label": "OLMo 2 (7B) — Allen AI, open science, transparent training",
         "id":    "olmo2:7b",
+        "temperature": 0.8,
+        "num_predict": 200,
     },
     {
         "label": "OLMo 2 (13B) — Allen AI, open science, larger model",
         "id":    "olmo2:13b",
+        "temperature": 0.8,
+        "num_predict": 200,
     },
     {
         "label": "Pleias 350m — copyright-free, literary register",
         "id":    "pleias-350m:latest",
-    },
-    {
-        "label": "Pleias Pico (350M) — copyright-free, RAG-specialized",
-        "id":    "hf.co/PleIAs/Pleias-Pico-GGUF:latest",
+        "temperature": 0.2,    # PleIAs recommends low temperature
+        "repeat_penalty": 1.2,
+        "num_predict": 80,     # base model doesn't self-terminate
     },
     {
         "label": "Pleias Nano (1.2B) — copyright-free, RAG-specialized",
         "id":    "pleias-nano:latest",
+        "temperature": 0.2,
+        "repeat_penalty": 1.2,
+        "num_predict": 60,     # very tight cap — this one runs forever
     },
     {
         "label": "Llama 3.2 (3B) — Meta, general language",
@@ -122,7 +132,7 @@ def ensure_model_available(model_id: str) -> bool:
         print(f"\n{COLOR_ERROR}Pull failed: {e}{RESET}")
         return False
 
-# ── Configuration ─────────────────────────────────────────────────────────────
+# ── "Big Picture" Parameters  ──────────────────────────────────────────────────────────
 
 OLLAMA_URL            = "http://localhost:11434/api/generate"
 TOP_K_CANDIDATES      = 5
@@ -162,10 +172,8 @@ COLOR_HESITATING = rgb(255, 60, 40)  # hot red    — high uncertainty
 COLOR_LABEL = rgb(180, 180, 180)  # soft grey  — UI chrome
 COLOR_HIGHLIGHT = rgb(220, 120, 255)  # violet     — hesitation marker
 COLOR_ERROR = rgb(255, 60, 40)  # same red as COLOR_HESITATING, or adjust to taste
-COLOR_HEADER = rgb(100, 220, 200)  # teal — section titles
+COLOR_HEADER = rgb(100, 220, 200)  # teal — section titles(?) or something else :-)
 
-
-# COLOR_HEADER is reserved for future use
 
 # Function to select a model! 
 def select_model() -> dict:
@@ -198,6 +206,39 @@ def select_model() -> dict:
                 print(f"{COLOR_ERROR}Skipping — please choose another model.{RESET}")
                 continue  # loop back to prompt again
         print(f"{COLOR_ERROR}Please enter a number between 1 and {len(MODELS)}.{RESET}")
+
+# ebb: Function to let the user adjust the temperature and prompt size
+def adjust_settings(model: dict) -> dict:
+    """
+    Give the user the options to override temperature and token limit
+    for the current model. Returns a copy of the model dict with
+    updated settings, leaving the registry defaults untouched.
+    """
+    import copy
+    m = copy.deepcopy(model)
+
+    print(f"\n{BOLD}{COLOR_HEADER}Model settings:{RESET}")
+    print(f"  {COLOR_LABEL}Temperature :{RESET} {m['temperature']}  "
+          f"{DIM}(lower = more predictable, higher = more creative){RESET}")
+    print(f"  {COLOR_LABEL}Max tokens  :{RESET} {m['num_predict']}  "
+          f"{DIM}(hard cap on response length){RESET}")
+    print(f"{DIM}Press Enter to keep current values.{RESET}\n")
+
+    raw = input(f"{COLOR_LABEL}Temperature [Enter to keep {m['temperature']}]: {RESET}").strip()
+    if raw:
+        try:
+            m["temperature"] = float(raw)
+        except ValueError:
+            print(f"{COLOR_ERROR}Invalid value, keeping {m['temperature']}{RESET}")
+
+    raw = input(f"{COLOR_LABEL}Max tokens  [Enter to keep {m['num_predict']}]: {RESET}").strip()
+    if raw:
+        try:
+            m["num_predict"] = int(raw)
+        except ValueError:
+            print(f"{COLOR_ERROR}Invalid value, keeping {m['num_predict']}{RESET}")
+
+    return m
 
 # ── Uncertainty Calculation ───────────────────────────────────────────────────
 def compute_uncertainty(top_logprobs: dict) -> float:
@@ -279,7 +320,7 @@ def on_uncertainty_event(token: str, score: float, candidates: dict):
     pass  # ← your trigger code here
 
 
-# ── Main Stream Loop ─────────────────────────────────────────────────────────────
+# ── Main Streaming Function! ─────────────────────────────────────────────────────────────
 
 def stream_with_uncertainty(prompt: str, model: dict):
     print(f"\n{BOLD}{COLOR_LABEL}━━━ Uncertainty Monitor ━━━{RESET}")
@@ -295,8 +336,13 @@ def stream_with_uncertainty(prompt: str, model: dict):
         "model": model['id'], "prompt": prompt, "stream": True,
         "logprobs": True,
         "top_logprobs": TOP_K_CANDIDATES,   # ← top level, not inside options
-        "options": {"temperature": 0.8,
-                "top_k": TOP_K_CANDIDATES, },
+        "options": {
+            "temperature": model.get("temperature", 0.8),
+            "repeat_penalty": model.get("repeat_penalty", 1.1),
+            # ebb: repeat penalty should help prevent looping in responses.
+            "top_k": TOP_K_CANDIDATES,
+            "num_predict": model.get("num_predict", 200),
+                    },
 }
     response = requests.post(OLLAMA_URL, json=payload, stream=True)
     response.raise_for_status()
@@ -356,7 +402,7 @@ def stream_with_uncertainty(prompt: str, model: dict):
     print(f"\n{DIM}Tune: UNCERTAINTY_THRESHOLD, MAX_PAUSE_SECONDS, PROMPT at top of file.")
     print(f"Wire up: add trigger code to on_uncertainty_event().{RESET}\n")
 
-# ── Entry Point ───────────────────────────────────────────────────────────────
+# ── User Entry Point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
@@ -377,13 +423,16 @@ if __name__ == "__main__":
         while True:
             try:
                 user_input = input(f"\n{COLOR_LABEL}Enter a prompt "
-                                   f"(or 'm' to switch model): {RESET}").strip()
+                                   f"(or 'm' to switch model, 's' to adjust settings): {RESET}").strip()
 
                 if user_input.lower() in ("quit", "exit", "q"):
                     print(f"\n{DIM}Goodbye.{RESET}\n")
                     break
                 if user_input.lower() == "m":
                     current_model = select_model()
+                    continue
+                if user_input.lower() == "s":
+                    current_model = adjust_settings(current_model)
                     continue
                 prompt = user_input if user_input else PROMPT
                 if not user_input:
