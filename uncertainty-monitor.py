@@ -18,8 +18,79 @@ import requests, json, math, time, sys
 import os
 if os.name == "nt":
     os.system("")   # triggers Windows 10+ ANSI mode in CMD/PowerShell
-# from datetime import datetime, timedelta
-# from dateutil import tz
+import platform
+import socket
+import datetime
+import xml.etree.ElementTree as ET
+from xml.dom import minidom
+
+# ── Log Sessions ────────────────────────────────────────────────────────────
+class SessionLogger:
+    """
+    Logs each session to a separate XML file in LOG_DIR.
+    Each session file has a <session> root with one <log> child per run.
+    """
+    def __init__(self, model: dict):
+        os.makedirs(LOG_DIR, exist_ok=True)
+        self.model = model
+        self.session_start = datetime.datetime.now()
+        timestamp_str = self.session_start.isoformat(timespec="seconds")
+        # This should give us a timestamp like this: "2026-04-18T14:20:00"
+        model_slug = model["id"].replace("/", "-").replace(":", "-")
+        filename = f"{timestamp_str}_{model_slug}.xml"
+        self.filepath = os.path.join(LOG_DIR, filename)
+        # Build the root element and write the initial file
+        self.root = ET.Element("session")
+        # Operating system information
+        self.root.set("hostname", socket.gethostname())
+        self.root.set("os", platform.system())  # e.g. "Darwin", "Windows", "Linux"
+        self.root.set("os_version", platform.version())  # detailed OS version string
+        self.root.set("os_release", platform.release())  # e.g. "14.4.1" on macOS
+        self.root.set("machine", platform.machine())  # e.g. "arm64", "x86_64"
+        self.root.set("processor", platform.processor())  # e.g. "arm", "Intel64"
+        self.root.set("python", platform.python_version())  # e.g. "3.13.0"
+        # Timestamp and model info
+        self.root.set("timestamp", self.session_start.isoformat(timespec="seconds"))
+        self.root.set("model_id", model["id"])
+        self.root.set("model_label", model["label"])
+        self._write()
+        print(f"{DIM}Logging to: {self.filepath}{RESET}")
+
+    def log_response(self, prompt: str, token_log: list, settings: dict):
+        """Call this after each completed generation."""
+        response_text = "".join(tok for tok, _, _ in token_log)
+        scores = [sc for _, sc, _ in token_log if sc > 0]
+        avg_uncertainty = sum(scores) / len(scores) if scores else 0
+        hesitations = sum(1 for sc in scores if sc > UNCERTAINTY_THRESHOLD)
+
+        # Build <log> element
+        log_el = ET.SubElement(self.root, "log")
+        log_el.set("timestamp", datetime.datetime.now().isoformat(timespec="seconds"))
+        log_el.set("temperature", str(settings.get("temperature", "")))
+        log_el.set("num_predict", str(settings.get("num_predict", "")))
+        log_el.set("repeat_penalty", str(settings.get("repeat_penalty", "")))
+
+        # <prompt> child
+        prompt_el = ET.SubElement(log_el, "prompt")
+        prompt_el.text = prompt
+
+        # <response> child
+        response_el = ET.SubElement(log_el, "response")
+        response_el.set("token_count", str(len(token_log)))
+        response_el.set("hesitation_count", str(hesitations))
+        response_el.set("mean_uncertainty", str(round(avg_uncertainty, 4)))
+        response_el.text = response_text
+
+        self._write()
+
+    def _write(self):
+        """Serialize the current tree to a pretty-printed XML file."""
+        raw = ET.tostring(self.root, encoding="unicode")
+        pretty = minidom.parseString(raw).toprettyxml(indent="    ")
+        # toprettyxml adds its own declaration; keep it clean
+        lines = pretty.split("\n")
+        with open(self.filepath, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines))
 
 # ── Model Registry ────────────────────────────────────────────────────────────
 # Add or remove models from the python dictionary here as you experiment.
