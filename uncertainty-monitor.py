@@ -25,6 +25,7 @@ import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
 # ── Log Sessions ────────────────────────────────────────────────────────────
+LOG_DIR = "logs"
 class SessionLogger:
     """
     Logs each session to a separate XML file in LOG_DIR.
