@@ -3,7 +3,7 @@
 A project to visualize and sonify the uncertainty of a language model's "thinking" process.
 Designed for the Penn State Behrend DIGIT program and VARIA lab.
 
-This is a tool for visualizing a language model's uncertainty in real time as it generates text. At the alpha stage, running only in the shell, each token is color-coded by confidence level: from cool blue (certain) through yellow/orange (hesitating) to red (genuinely torn between multiple possibilities). High-uncertainty moments trigger a dramatic pause, helping to visualize the model's "thinking process". As the project develops, we intend to build this an art exhibit with light and sound effects to dramatize the experience of uncertainty in the model's processing.
+This is a tool for visualizing a language model's uncertainty in real time as it generates text. At the alpha stage, running only in the shell, each token is color-coded by confidence level: from cool blue (certain) through yellow/orange (hesitating) to red (torn between multiple possibilities). High-uncertainty moments trigger a dramatic pause, helping to visualize the model's "thinking process". As the project develops, we intend to build this an art exhibit with light and sound effects to dramatize the experience of uncertainty in the model's processing.
 
 In the alpha version, it runs only in a shell environment running Python 3 (we recommend 3.13), and depending on the local presence of Ollama to pull in a Qwen model. The script is set to pull Qwen2:5:15b, but can readily be changed to access a different model.
 
