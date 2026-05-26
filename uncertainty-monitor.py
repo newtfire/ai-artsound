@@ -23,6 +23,7 @@ import socket
 import datetime
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
+sys.stdout.reconfigure(encoding='utf-8') # Allows special characters on Windows
 
 # ── Log Sessions ────────────────────────────────────────────────────────────
 LOG_DIR = "logs"
@@ -35,7 +36,7 @@ class SessionLogger:
         os.makedirs(LOG_DIR, exist_ok=True)
         self.model = model
         self.session_start = datetime.datetime.now()
-        timestamp_str = self.session_start.isoformat(timespec="seconds")
+        timestamp_str = self.session_start.strftime("%Y-%m-%dT%H-%M-%S")
         # This should give us a timestamp like this: "2026-04-18T14:20:00"
         model_slug = model["id"].replace("/", "-").replace(":", "-")
         filename = f"{timestamp_str}_{model_slug}.xml"
@@ -51,7 +52,7 @@ class SessionLogger:
         self.root.set("processor", platform.processor())  # e.g. "arm", "Intel64"
         self.root.set("python", platform.python_version())  # e.g. "3.13.0"
         # Timestamp and model info
-        self.root.set("timestamp", self.session_start.isoformat(timespec="seconds"))
+        self.root.set("timestamp", self.session_start.strftime("%Y-%m-%dT%H-%M-%S"))
         self.root.set("model_id", model["id"])
         self.root.set("model_label", model["label"])
         self._write()
@@ -66,7 +67,7 @@ class SessionLogger:
 
         # Build <log> element
         log_el = ET.SubElement(self.root, "log")
-        log_el.set("timestamp", datetime.datetime.now().isoformat(timespec="seconds"))
+        log_el.set("timestamp", datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S"))
         log_el.set("temperature", str(settings.get("temperature", "")))
         log_el.set("num_predict", str(settings.get("num_predict", "")))
         log_el.set("repeat_penalty", str(settings.get("repeat_penalty", "")))
