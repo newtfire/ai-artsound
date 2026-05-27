@@ -1,0 +1,169 @@
+# Setup Instructions — Uncertainty Monitor (Sound Version)
+
+This version now uses:
+
+- `requests` — communicates with Ollama
+- `numpy` — generates audio waveforms
+- `sounddevice` — plays audio in real time
+
+Ollama must already be installed.
+
+---
+
+## Step 1 — Open your terminal and activate your virtual environment
+
+This is the same step you do every time before running the scripts.
+
+**macOS / Linux:**
+```
+source .venv/bin/activate
+```
+
+**Windows (Command Prompt):**
+```
+.venv\Scripts\activate.bat
+```
+
+**Windows (PowerShell):**
+```
+.venv\Scripts\Activate.ps1
+```
+
+You should see `(.venv)` at the beginning of your terminal prompt.
+
+---
+
+## Step 2 — Install Required Python Packages
+
+With your virtual environment active, run:
+
+```
+pip install requests numpy sounddevice
+```
+
+---
+
+### Platform-Specific Notes
+
+### macOS
+Usually works out of the box.
+
+If you encounter PortAudio errors:
+```
+brew install portaudio
+pip install --force-reinstall sounddevice
+```
+
+---
+
+### Windows
+Installation usually succeeds without issue.
+
+If audio fails or you get a PortAudio error:
+
+1. Ensure your audio drivers are working.
+2. Try reinstalling:
+```
+pip install --force-reinstall sounddevice
+```
+
+---
+
+### Linux (Ubuntu/Debian)
+You may need system audio libraries first:
+
+```
+sudo apt install portaudio19-dev
+pip install sounddevice
+```
+
+---
+
+## Step 3 — Replace Your Script Files
+
+Copy the new `.py` files into your project directory, replacing the old versions:
+
+- `uncertainty-monitor.py`  ← main interactive monitor
+- `uncertainty-monitor-alpha_q.py`  ← Qwen sonification version
+- `uncertainty-monitor-alpha.py`  ← Pleias sonification version
+
+---
+
+## Step 4 — Make Sure Ollama Is Running
+
+Start Ollama before running the scripts:
+
+```
+ollama serve
+```
+
+Leave this running in a separate terminal window.
+
+If needed, pull the required model first, for example:
+
+```
+ollama pull qwen2.5:1.5b
+```
+
+---
+
+## Step 5 — Run the Script
+
+Make sure your virtual environment is still active.
+
+### Main interactive monitor:
+```
+python uncertainty-monitor.py
+```
+
+### Qwen sonification version:
+```
+python uncertainty-monitor-alpha_q.py
+```
+
+### Pleias sonification version:
+```
+python uncertainty-monitor-alpha.py
+```
+
+---
+
+## What You’ll Hear (Sonification Versions)
+
+- **Pitch** increases with model uncertainty.
+- The scale is C major pentatonic, repeating across multiple octaves.
+- Lower notes = high confidence.
+- Higher notes = greater uncertainty.
+
+Some versions also map the probability gap between the top two tokens
+onto the release time of the note.
+
+---
+
+## Troubleshooting
+
+### No sound but no error
+- Check system volume.
+- Confirm correct output device is selected.
+
+### "PortAudio error"
+Reinstall sounddevice:
+```
+pip install --force-reinstall sounddevice
+```
+
+On Linux, ensure `portaudio19-dev` is installed.
+
+---
+
+## Folder Structure
+
+Your project folder should contain:
+
+```
+uncertainty-monitor.py
+uncertainty-monitor-alpha.py
+uncertainty-monitor-alpha_q.py
+```
+
+Run all commands from this directory.
