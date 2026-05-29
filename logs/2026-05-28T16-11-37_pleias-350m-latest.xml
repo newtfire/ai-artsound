@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<session hostname="Lilith.local" os="Darwin" os_version="Darwin Kernel Version 25.5.0: Mon Apr 27 20:38:56 PDT 2026; root:xnu-12377.121.6~2/RELEASE_ARM64_T6000" os_release="25.5.0" machine="arm64" processor="arm" python="3.13.12" timestamp="2026-05-28T16-11-37" model_id="pleias-350m:latest" model_label="Pleias 350m — copyright-free, literary register">
+    <log timestamp="2026-05-28T16-14-15" temperature="0.2" num_predict="80" repeat_penalty="1.2">
+        <prompt>write a dialogue between a cat and a canary on the edge of being eaten. the canary should plead for a swift death</prompt>
+        <response token_count="81" hesitation_count="66" mean_uncertainty="0.7322">, but he is not so quick as to kill himself; it would be better if he could have killed him- self in his own way." "But what about your father?" asked Mr. Higgins anxiously. The cat's eyes were fixed on the speaker with an expression of great anxiety and interest. He was a tall, thin man, with dark hair and brown eyes that seemed to be</response>
+    </log>
+</session>
