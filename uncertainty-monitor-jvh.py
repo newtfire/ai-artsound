@@ -23,6 +23,7 @@ import socket
 import datetime
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
+sys.stdout.reconfigure(encoding='utf-8') # Allows special characters on Windows
 
 # ── Log Sessions ────────────────────────────────────────────────────────────
 LOG_DIR = "logs"
