@@ -1,0 +1,972 @@
+{
+  "name": "Image-Analysis",
+  "nodes": [
+    {
+      "parameters": {
+        "fileSelector": "/home/node/imageColl/*.jpg",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        -560,
+        -192
+      ],
+      "id": "e5cc9d1c-b404-48f7-8585-3d69444a7efd",
+      "name": "Read in image files",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "fileSelector": "/home/node/imageColl/*.json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        -576,
+        16
+      ],
+      "id": "1fbd1bff-07a9-40e6-ae8d-5caa30ba660f",
+      "name": "Read in JSON metadata",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -304,
+        -112
+      ],
+      "id": "38178db7-8264-4ca9-81ef-8fa6b94a2f98",
+      "name": "Merge",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -736,
+        -32
+      ],
+      "id": "5b61edf0-6b26-478b-8d27-63e5a27bbf77",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "modelId": {
+          "__rl": true,
+          "value": "llava-llama3:latest",
+          "mode": "list",
+          "cachedResultName": "llava-llama3:latest"
+        },
+        "text": "Analyze the provided image. You must respond ONLY with this exact JSON structure, no other format:\n\n{ \n  \"room_type\": \"...\",\n  \"decade_markers\": [...],\n  \"furniture\": [\"simple\", \"flat\", \"list\", \"of\", \"item\", \"names\"]\n  \"color_scheme\": {\n    \"dominant\": \"...\",\n    \"accents\": [...],\n    \"mood\": \"...\"\n  },\n  \"textures\": [...],\n  \"keywords\": [...]\n}\n\nDo not include URLs, titles, versions, or any other fields. JSON only.",
+        "binaryPropertyName": "=data",
+        "simplify": false,
+        "options": {
+          "system": "=You are analyzing a photograph of a household interior, likely from the 1970s or 1980s. The image ID is {{ $json.data.id }}.\n\nThe image has a dominant color tone of {{ $json.data.avg_color }}.\nPexels describes it as: \"{{ $json.data.alt }}\"\n\nPlease analyze the image and respond in the following exact JSON format:\n\n{ \"room_type\": \"the type of room (e.g. living room, kitchen, bedroom)\",\n  \"decade_markers\": [\"list\", \"of\", \"visual\", \"clues\", \"suggesting\", \"the\", \"era\"],\n  \"furniture\": [\"list\", \"of\", \"furniture\", \"items\", \"visible\"],\n  \"color_scheme\": {\n    \"dominant\": \"primary color or tone\",\n    \"accents\": [\"secondary\", \"colors\"],\n    \"mood\": \"one-word mood descriptor (e.g. warm, cool, earthy)\"\n  },\n  \"textures\": [\"carpet\", \"wallpaper\", \"wood\", \"etc\"],\n  \"keywords\": [\"flat\", \"list\", \"of\", \"all\", \"descriptive\", \"keywords\"]\n}\n\nRespond with JSON only. No explanation or preamble. You must identify:\n- At least 4 decade_markers\n- At least 5 furniture items\n- At least 6 keywords\n- At least 3 textures\n- Specific color names (e.g. \"harvest gold\" not just \"brown\")",
+          "temperature": 0.3,
+          "top_k": 40,
+          "num_predict": 2048,
+          "repeat_penalty": 1.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.ollama",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -192
+      ],
+      "id": "c95d905f-6f47-4a12-a2ec-e7d92c972f99",
+      "name": "Analyze image",
+      "alwaysOutputData": false,
+      "credentials": {
+        "ollamaApi": {
+          "id": "xwQDNdcxZ7ymLBxf",
+          "name": "Ollama account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -320,
+        128
+      ],
+      "id": "eaf53e41-e1f1-4e19-9ac2-edc7c8473570",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -64,
+        16
+      ],
+      "id": "732bd8bc-fc8a-49ec-b4e6-3a755bb269cd",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "qwen3:8b",
+          "mode": "list",
+          "cachedResultName": "qwen3:8b"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=\n/no_think\nYou are a specialist in 20th century interior design and material culture.\n\nHere is a structured analysis of a SPECIFIC household interior photograph:\n\nRoom type: {{ $json.model_output.room_type }}\nDecade markers: {{ $json.model_output.decade_markers.join(', ') }}\nFurniture observed: {{ $json.model_output.furniture.join(', ') }}\nDominant color: {{ $json.model_output.color_scheme.dominant }}\nAccent colors: {{ $json.model_output.color_scheme.accents.join(', ') }}\nMood: {{ $json.model_output.color_scheme.mood }}\nTextures observed: {{ $json.model_output.textures.join(', ') }}\nPexels description: {{ $json.alt }}\nDominant color hex: {{ $json.avg_color }}\n\nGenerate keywords derived ONLY from the specific details listed above.\nDo NOT add period stereotypes, generic era assumptions, or items not mentioned above.\nEvery keyword must be traceable to something in the input data above.\n\nRespond ONLY with this exact JSON structure:\n{\n  \"keywords_functional\": [\"room function keywords based ONLY on observed furniture and layout\"],\n  \"keywords_aesthetic\": [\"style keywords ONLY from observed details\"],\n  \"keywords_material\": [\"ONLY materials and textures actually listed above\"],\n  \"keywords_era\": [\"ONLY decade markers listed above\"],\n  \"keywords_color\": [\"ONLY colors mentioned above, converted to period names where appropriate\"],\n  \"keywords_flat\": [\"deduplicated flat list of all keywords above\"]\n}\n\nJSON only. No preamble."
+            }
+          ]
+        },
+        "simplify": false,
+        "options": {
+          "temperature": 0.3,
+          "top_k": 30,
+          "num_predict": 2048,
+          "repeat_penalty": 1.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.ollama",
+      "typeVersion": 1,
+      "position": [
+        144,
+        192
+      ],
+      "id": "87a9e70b-7d54-4c25-83e8-4dfb5f99cea0",
+      "name": "Message a model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "xwQDNdcxZ7ymLBxf",
+          "name": "Ollama account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        496,
+        208
+      ],
+      "id": "6bac6a70-278d-4499-975b-5b89b4998c76",
+      "name": "Merge2"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Parse Qwen keyword output\nlet keywords = {};\ntry {\n  const raw = $json.message.content\n    .replace(/```json|```/g, '')\n    .trim();\n  keywords = JSON.parse(raw);\n} catch(e) {\n  keywords = {\n    keywords_functional: [],\n    keywords_aesthetic: [],\n    keywords_material: [],\n    keywords_era: [],\n    keywords_color: [],\n    keywords_flat: []\n  };\n}\n\nconst flat = keywords.keywords_flat || [];\nconst era = keywords.keywords_era || [];\nconst color = keywords.keywords_color || [];\n\nconst embedText = [\n  $json.alt || '',\n  $json.model_output?.room_type || '',\n  flat.join(', ')\n].filter(Boolean).join('. ');\n\nreturn {\n  json: {\n    embed_text: embedText,\n    metadata: {\n      stem: parseInt($json.stem),\n      avg_color: $json.avg_color,\n      alt: $json.alt,\n      photographer: $json.photographer,\n      room_type: $json.model_output?.room_type || '',\n      decade_markers: ($json.model_output?.decade_markers || []).join(', '),\n      dominant_color: $json.model_output?.color_scheme?.dominant || '',\n      mood: $json.model_output?.color_scheme?.mood || '',\n      keywords_flat: flat.join(', '),\n      keywords_era: era.join(', '),\n      keywords_color: color.join(', '),\n      keywords_functional: (keywords.keywords_functional || []).join(', '),\n      keywords_aesthetic: (keywords.keywords_aesthetic || []).join(', '),\n      keywords_material: (keywords.keywords_material || []).join(', '),\n      pexels_url: `https://images.pexels.com/photos/${$json.metadata.stem}/pexels-photo-${$json.metadata.stem}.jpeg`\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        208
+      ],
+      "id": "8bd01e26-f232-4d3a-a032-e69ca6c0bb8d",
+      "name": "JSON Code Cleanup 2"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "let raw = $json.message.content\n  .replace(/```json|```/g, '')\n  .trim();\n\n// Fix unquoted values (e.g. [1960s] or mood: warm)\nraw = raw.replace(/:\\s*([a-zA-Z0-9][a-zA-Z0-9\\s\\-]*?)([,\\n}\\]])/g, \n  (match, value, terminator) => {\n    const trimmed = value.trim();\n    // Skip if it looks like a number, boolean, or null\n    if (['true','false','null'].includes(trimmed) || !isNaN(trimmed)) {\n      return match;\n    }\n    return `: \"${trimmed}\"${terminator}`;\n  }\n);\n\n// Fix unquoted array elements (e.g. [\"1960s, 1970s] or [warm, cozy])\nraw = raw.replace(/\\[\\s*([^\"\\[\\]{}\\n][^,\\[\\]]*?)(\\s*[,\\]])/g,\n  (match, value, terminator) => {\n    const trimmed = value.trim();\n    if (['true','false','null'].includes(trimmed) || !isNaN(trimmed)) {\n      return match;\n    }\n    return `[\"${trimmed}\"${terminator}`;\n  }\n);\n// Fix mixed-quoted arrays: [\"1960s\", 1970s, 1980s] → [\"1960s\", \"1970s\", \"1980s\"]\nraw = raw.replace(/\\[([^\\[\\]]*)\\]/g, (match, inner) => {\n  const fixed = inner.split(',').map(element => {\n    const trimmed = element.trim();\n    // Already quoted, a number, boolean, or null — leave alone\n    if (\n      trimmed.startsWith('\"') || \n      trimmed.startsWith(\"'\") ||\n      !isNaN(trimmed) ||\n      ['true','false','null'].includes(trimmed) ||\n      trimmed === ''\n    ) {\n      return element;\n    }\n    // Unquoted string — wrap it\n    return ` \"${trimmed}\"`;\n  }).join(',');\n  return `[${fixed}]`;\n});\n\nlet parsed;\ntry {\n  parsed = JSON.parse(raw);\n} catch(e) {\n  parsed = {\n    room_type: \"unknown\",\n    decade_markers: [],\n    furniture: [],\n    color_scheme: { dominant: \"\", accents: [], mood: \"\" },\n    textures: [],\n    keywords: [],\n    parse_error: e.message,\n    raw_content: raw\n  };\n}\n\nreturn {\n  json: {\n    stem: $json.data?.id?.toString() || 'unknown',\n    avg_color: $json.data?.avg_color || '',\n    alt: $json.data?.alt || '',\n    photographer: $json.data?.photographer || '',\n    model_output: parsed\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -48,
+        208
+      ],
+      "id": "dbb0500e-4ab2-49ad-adaf-214567f0090b",
+      "name": "JSON Code Cleanup 1"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        976,
+        512
+      ],
+      "id": "39268fe4-121f-4d5c-a40c-110548a34125",
+      "name": "Merge3"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:11434/api/embeddings",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "ollamaApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"nomic-embed-text\",\n  \"prompt\": \"{{ $json.embed_text }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        896,
+        240
+      ],
+      "id": "a7f72084-4783-4b65-ab2a-d5f1dee226bf",
+      "name": "Ollama Nomic Embeddings Request",
+      "credentials": {
+        "ollamaApi": {
+          "id": "xwQDNdcxZ7ymLBxf",
+          "name": "Ollama account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    metadata: $json.metadata,\n    embed_text: $json.embed_text,\n    qdrant_payload: {\n      points: [\n        {\n          id: $json.metadata.stem,\n          vector: $json.embedding,\n          payload: {\n            stem: $json.metadata.stem,\n            avg_color: $json.metadata.avg_color,\n            alt: $json.metadata.alt,\n            photographer: $json.metadata.photographer,\n            room_type: $json.metadata.room_type,\n            decade_markers: $json.metadata.decade_markers,\n            dominant_color: $json.metadata.dominant_color,\n            mood: $json.metadata.mood,\n            keywords_flat: $json.metadata.keywords_flat,\n            pexels_url: $json.metadata.pexels_url,\n            embed_text: $json.embed_text\n          }\n        }\n      ]\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        544
+      ],
+      "id": "44aad8a5-b642-427c-85e8-8e63e31c0a6d",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "http://host.docker.internal:6333/collections/retroHomeDecor/points",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.qdrant_payload }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1280,
+        576
+      ],
+      "id": "a15d6095-0803-4e94-95b2-038ab6332a73",
+      "name": "Qdrant HTTP Request"
+    },
+    {
+      "parameters": {
+        "content": "## Image Data Compiler",
+        "height": 80,
+        "width": 336
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -416,
+        -256
+      ],
+      "id": "bfd44803-025e-4cf2-ad37-8514f1a01f1e",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Going into Qdrant!",
+        "height": 80,
+        "width": 272
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        848,
+        144
+      ],
+      "id": "3ee08bca-cf2c-4f5c-b62e-5ca3b1ed559b",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -1408,
+        -608
+      ],
+      "id": "c4148367-6f56-4211-bd78-fffd800303f7",
+      "name": "When chat message received",
+      "webhookId": "a6391700-1504-4c3f-b246-8ff8f2b04d12",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=You have access to a Qdrant vector database called retroHomeDecor.\nONLY answer using information retrieved from this database.\nQuote specific fields like room_type, keywords_flat, and dominant_color.\nIf you cannot find the answer in retrieved results, say explicitly:\n\"I don't have enough data in the collection to answer that.\"\nNever supplement with general knowledge.\n",
+          "returnIntermediateSteps": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -1200,
+        -608
+      ],
+      "id": "c3b063f0-492a-413b-88e3-95d9ed647271",
+      "name": "AI Agent",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.4,
+      "position": [
+        -1184,
+        -416
+      ],
+      "id": "ff0fbeba-bf7e-4fd0-a4ac-b3727d314969",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "IopNGykg5bLWOt0j",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "qwen3:8b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        -1312,
+        -416
+      ],
+      "id": "213a3f86-1e83-4737-a8ab-88819bcf975a",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "xwQDNdcxZ7ymLBxf",
+          "name": "Ollama account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "Vector data stored from JSON descriptions of home decor.",
+        "topK": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Limit', ``, 'number') }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1.1,
+      "position": [
+        -944,
+        -480
+      ],
+      "id": "d4153a30-435e-4746-9cb6-e3b3e1f90f3b",
+      "name": "Answer questions with a vector store"
+    },
+    {
+      "parameters": {
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "retroHomeDecor",
+          "mode": "list",
+          "cachedResultName": "retroHomeDecor"
+        },
+        "options": {
+          "contentPayloadKey": "embed_text"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        -1104,
+        -304
+      ],
+      "id": "8ab8acca-09b1-4913-9e05-ef550146edce",
+      "name": "Qdrant Vector Store",
+      "credentials": {
+        "qdrantApi": {
+          "id": "ucSbbtFaWKx7j54e",
+          "name": "Qdrant account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "qwen3:8b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmOllama",
+      "typeVersion": 1,
+      "position": [
+        -848,
+        -352
+      ],
+      "id": "d0fe8edb-5415-45ba-98ba-16e184dea4e0",
+      "name": "Ollama Model1",
+      "credentials": {
+        "ollamaApi": {
+          "id": "xwQDNdcxZ7ymLBxf",
+          "name": "Ollama account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "nomic-embed-text:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        -1088,
+        -96
+      ],
+      "id": "e5b55f82-4706-460e-b6d6-f5353dd0c100",
+      "name": "Embeddings Ollama",
+      "credentials": {
+        "ollamaApi": {
+          "id": "xwQDNdcxZ7ymLBxf",
+          "name": "Ollama account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Chat with the image info store",
+        "height": 80,
+        "width": 496
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1392,
+        -704
+      ],
+      "id": "63125644-37bd-4d06-8d77-d049d289d0d8",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Save Outputs from Image Processing >> JSON \n\nwithout rerunning the whole pipeline!",
+        "height": 112,
+        "width": 336
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        -768
+      ],
+      "id": "0803fd21-9a16-4c20-8472-1af807c8b0c8",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:6333/collections/retroHomeDecor/points/scroll",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"limit\": 100,\n  \"with_payload\": true,\n  \"with_vector\": false\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -624,
+        -608
+      ],
+      "id": "7c0bc574-9642-4dfc-9ccc-3bc477713b87",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "toJson",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -272,
+        -608
+      ],
+      "id": "00692400-0da8-4975-9c89-06c17730e418",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/home/node/testOutput/{{ $now.toFormat('yyyy-MM-dd_HH-mm-ss') }}-keywords.json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        -64,
+        -608
+      ],
+      "id": "03222f02-8346-448d-9b8b-6481a420b4e2",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://host.docker.internal:6333/collections/retroHomeDecor/points/scroll",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"limit\": 100,\n  \"with_payload\": true,\n  \"with_vector\": true\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -576,
+        -432
+      ],
+      "id": "b00e3949-a3ae-4b34-bc91-1e3ce154e8cc",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "operation": "toJson",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -48,
+        -416
+      ],
+      "id": "6f577b25-d70e-49df-8d6a-5792b43c132d",
+      "name": "Convert to File1"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/home/node/testOutput/{{ $now.toFormat('yyyy-MM-dd_HH-mm-ss') }}-qdrant-full-backup.json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        144,
+        -416
+      ],
+      "id": "2e4e7ae7-6ceb-4836-93f6-ee2423253d59",
+      "name": "Read/Write Files from Disk1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const points = $json.result.points;\nreturn points.map(p => ({\n  json: {\n    ...p.payload,\n    pexels_url: `https://images.pexels.com/photos/${p.payload.stem}/pexels-photo-${p.payload.stem}.jpeg`\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        -608
+      ],
+      "id": "f05db83a-32b4-4dbd-84a7-aefe0b54f6cd",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "const points = $json.result.points;\n\nreturn points.map(p => {\n  const new_url = `https://images.pexels.com/photos/${p.payload.stem}/pexels-photo-${p.payload.stem}.jpeg`;\n  \n  return {\n    json: {\n      // For the Qdrant update HTTP Request\n      qdrant_update: {\n        points: [p.payload.stem],\n        payload: {\n          pexels_url: new_url\n        }\n      },\n      // For the backup file after the update\n      full_point: {\n        ...p,\n        payload: {\n          ...p.payload,\n          pexels_url: new_url  // corrected URL in backup too\n        }\n      }\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        -432
+      ],
+      "id": "bc054cf8-0beb-463d-b0f5-453c97b160ed",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:6333/collections/retroHomeDecor/points/payload",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.qdrant_update }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -208,
+        -400
+      ],
+      "id": "18ae7fba-3ddf-4173-9bf2-539041f58e5c",
+      "name": "HTTP Request2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Read in image files": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read in JSON metadata": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Read in JSON metadata",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read in image files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Analyze image",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Analyze image": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "JSON Code Cleanup 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "JSON Code Cleanup 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Code Cleanup 1": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "JSON Code Cleanup 2": {
+      "main": [
+        [
+          {
+            "node": "Ollama Nomic Embeddings Request",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge3": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Nomic Embeddings Request": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Qdrant HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer questions with a vector store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Store": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Answer questions with a vector store",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Answer questions with a vector store",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File1": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Convert to File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a8b5dbea-b708-4935-9742-278e4c6e6407",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "158df2a719a4b6e7786129d2b8fd57e6ecac3e89c2baab3c0b3fdf61d0574495"
+  },
+  "nodeGroups": [],
+  "id": "tUTO8oeq1iCU23aA",
+  "tags": []
+}
