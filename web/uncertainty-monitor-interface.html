@@ -8,16 +8,15 @@
         <link rel="stylesheet" href="style.css">
         <script type="module" src="https://pyscript.net/releases/2026.3.1/core.js"></script> <!-- errors from PyScript are thrown: still functional on Chrome -->
          <!-- Audio engine for sonification -->
-    <script>
-        /* ebb: Here we wrap the whole JS function for playing sounds in the browser in ( )s in order to protect its
-        * scope so it does not interfere with other JS functions  */
-        /* Claude Sonnet's explanation (17 June 2026): javascript/* Audio engine for sonification.
+          <!-- ebb: In the next function, we wrap the whole JS function for playing sounds in the browser in ( )s in order to protect its
+         scope so it does not interfere with other JS functions. Claude Sonnet's explanation (17 June 2026): Audio engine for sonification.
    Wrapped in an IIFE (immediately invoked function expression) — the (function(){ ... })() pattern —
    to keep internal audio state (_ctx, _gainNode, _osc1, _osc2) private and protected.
    These variables must persist across calls (so playNote and triggerRelease share the same
    AudioContext), but don't need to be visible to the rest of the page.
    Only the three window.* functions are intentionally exposed as the public interface
-   called from Python via PyScript. */
+   called from Python via PyScript. -->
+    <script>
     (function () {
         let _ctx        = null;
         let _gainNode   = null;
@@ -180,6 +179,7 @@
                         tempNote.textContent = '';
                         display.textContent = '0.8';
                         tdisplay.textContent = '200';
+                        console.log('Yay! You selected a llama model, 3.2:1b')
                     } else {
                         modelDesc.textContent = 'General language, web-trained.';
                         tokenNote.textContent = '';
