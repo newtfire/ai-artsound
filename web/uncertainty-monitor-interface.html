@@ -7,6 +7,87 @@
         <link rel="stylesheet" href="https://pyscript.net/releases/2026.3.1/core.css" />
         <link rel="stylesheet" href="style.css">
         <script type="module" src="https://pyscript.net/releases/2026.3.1/core.js"></script> <!-- errors from PyScript are thrown: still functional on Chrome -->
+         <!-- Audio engine for sonification -->
+    <script>
+        /* ebb: Here we wrap the whole JS function for playing sounds in the browser in ( )s in order to protect its
+        * scope so it does not interfere with other JS functions  */
+        /* Claude Sonnet's explanation (17 June 2026): javascript/* Audio engine for sonification.
+   Wrapped in an IIFE (immediately invoked function expression) — the (function(){ ... })() pattern —
+   to keep internal audio state (_ctx, _gainNode, _osc1, _osc2) private and protected.
+   These variables must persist across calls (so playNote and triggerRelease share the same
+   AudioContext), but don't need to be visible to the rest of the page.
+   Only the three window.* functions are intentionally exposed as the public interface
+   called from Python via PyScript. */
+    (function () {
+        let _ctx        = null;
+        let _gainNode   = null;
+        let _osc1       = null;
+        let _osc2       = null;
+
+        let ATTACK_SECONDS  = 0.030;
+        let DECAY_RATE      = 12.0;
+        let RELEASE_SECONDS = 0.22;
+        let VOLUME          = 0.3;
+
+        window.initAudio = function(attackSec, decayRate, releaseSec, volume) {
+            if (_ctx && _ctx.state !== 'closed') return;
+            ATTACK_SECONDS  = attackSec  ?? ATTACK_SECONDS;
+            DECAY_RATE      = decayRate  ?? DECAY_RATE;
+            RELEASE_SECONDS = releaseSec ?? RELEASE_SECONDS;
+            VOLUME          = volume     ?? VOLUME;
+            _ctx = new AudioContext();
+        };
+
+        function _stopOscillators(when) {
+            if (_osc1) { try { _osc1.stop(when); } catch(e) {} _osc1 = null; }
+            if (_osc2) { try { _osc2.stop(when); } catch(e) {} _osc2 = null; }
+        }
+
+        window.playNote = function(freq, releaseSeconds) {
+            if (!_ctx) return;
+            const now = _ctx.currentTime;
+            _stopOscillators(now);
+            if (_gainNode) _gainNode.disconnect();
+
+            _gainNode = _ctx.createGain();
+            _gainNode.connect(_ctx.destination);
+            _gainNode.gain.setValueAtTime(0.0, now);
+
+            const attackEnd = now + ATTACK_SECONDS;
+            _gainNode.gain.linearRampToValueAtTime(VOLUME, attackEnd);
+
+            const tau = 1.0 / DECAY_RATE;
+            _gainNode.gain.setTargetAtTime(0.0, attackEnd, tau);
+
+            _osc1 = _ctx.createOscillator();
+            _osc1.type = 'sine';
+            _osc1.frequency.setValueAtTime(freq, now);
+            _osc1.connect(_gainNode);
+            _osc1.start(now);
+
+            const ot2Gain = _ctx.createGain();
+            ot2Gain.gain.setValueAtTime(0.25, now);
+            ot2Gain.connect(_gainNode);
+
+            _osc2 = _ctx.createOscillator();
+            _osc2.type = 'sine';
+            _osc2.frequency.setValueAtTime(freq * 4.0, now);
+            _osc2.connect(ot2Gain);
+            _osc2.start(now);
+        };
+
+        window.triggerRelease = function(releaseSeconds) {
+            if (!_ctx || !_gainNode) return;
+            const now = _ctx.currentTime;
+            const rel = releaseSeconds ?? RELEASE_SECONDS;
+            _gainNode.gain.cancelScheduledValues(now);
+            _gainNode.gain.setValueAtTime(_gainNode.gain.value, now);
+            _gainNode.gain.linearRampToValueAtTime(0.0, now + rel);
+            _stopOscillators(now + rel + 0.01);
+        };
+    })();
+    </script>
+
     </head>
     <body>
         <h1>Uncertainty Monitor</h1>
