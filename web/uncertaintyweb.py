@@ -428,44 +428,5 @@ def make_envelope(total_samples, attack=0.01, decay=0.05, sustain=0.7,
     return envelope[:total_samples]
 
 
-# ── Exhibit Trigger Hook ──────────────────────────────────────────────────────
-
-def on_uncertainty_event(token: str, score: float, candidates: dict):
-    """
-    Fires on every token.
-    - Punctuation (. ! ? ; :) triggers a release (fade to silence).
-    - Tokens starting with a space mark a true word boundary — also release
-      briefly before the new note, so compound sub-word tokens (e.g. "stand"
-      + "ing") flow into each other with sustain pedal effect, only cutting
-      off cleanly at the next real word boundary.
-    - All other tokens play their note immediately after the previous one.
-    Add Arduino / OSC / MCP calls here as the exhibit develops.
-
-    Args:
-        token      : the word the model just chose
-        score      : 0.0 (confident) -> 1.0 (maximally uncertain)
-        candidates : {token_string: log_prob} for the top-k alternatives
-    """
-    # Punctuation: full release to silence
-    if any(p in token for p in PUNCTUATION):
-        trigger_release()
-        return
-
-    if not token.strip():
-        return
-
-    # A leading space means this is a new word (not a sub-word continuation).
-    # Trigger a very brief release so the previous word cuts off cleanly,
-    # then immediately start the new note — like lifting and re-pressing a
-    # piano key with the sustain pedal still down.
-    if token.startswith(' '):
-        trigger_release()
-        time.sleep(ATTACK_SECONDS * 2)   # tiny gap between words
-
-    midi_note = score_to_note(score)
-    freq      = midi_to_freq(midi_note)
-    play_tone(freq)
-
-
 
 
