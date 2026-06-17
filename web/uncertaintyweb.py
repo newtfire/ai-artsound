@@ -233,7 +233,11 @@ def createLog(token_count, hesitation_count, mean_uncertainty):
 
 @when("click", "#run") # retrieves values from webpage
 async def handle_click():
-    audio_ctx = window.AudioContext.new()
+    # initAudio() MUST be called from a user-gesture handler (this click) to
+    # satisfy the browser's autoplay policy.  We pass in all tuning constants
+    # from Python so the JS engine stays in sync with the values above.
+    print("handle_click fired!")
+    window.initAudio(ATTACK_SECONDS, DECAY_RATE, RELEASE_SECONDS, _VOLUME)
     model = str(page["#modelSelect"].value)
     prompt   = str(page["#promptConfirm"].textContent) #uses confirm <p> so default prompt is chosen w/o input
     temp     = float(page["#temp"].value)
@@ -348,85 +352,3 @@ async def handle_click():
         output.textContent = f"Error: {str(e)}"
 
     createLog(token_count, hesitation_count, total_uncertainty/token_count if token_count > 0 else 0.0)
-
-
-
-# Sound?
-PENTATONIC_INTERVALS = [0, 2, 4, 7, 9]   # semitones: C D E G A
-
-def build_pentatonic_scale(start_midi=48, end_midi=93):
-    """Returns MIDI note numbers for C major pentatonic from start to end."""
-    notes = []
-    octave = 0
-    while True:
-        for interval in PENTATONIC_INTERVALS:
-            note = start_midi + octave * 12 + interval
-            if note > end_midi:
-                return notes
-            notes.append(note)
-        octave += 1
-
-PENTATONIC_SCALE = build_pentatonic_scale()
-
-def midi_to_freq(midi_note: int) -> float:
-    """Convert a MIDI note number to frequency in Hz."""
-    return 440.0 * (2.0 ** ((midi_note - 69) / 12.0))
-
-def score_to_note(score: float) -> int:
-    """Map uncertainty score 0.0–1.0 to a MIDI note in the pentatonic scale."""
-    index = int(score * (len(PENTATONIC_SCALE) - 1))
-    index = max(0, min(index, len(PENTATONIC_SCALE) - 1))
-    return PENTATONIC_SCALE[index]
-
-def top_two_gap(top_logprobs: dict) -> float:
-    """
-    Probability gap between the #1 and #2 candidates, normalized to 0.0–1.0.
-      Near 1.0 = clear winner (model was decisive)
-      Near 0.0 = near-tie   (model was torn between top two)
-    This drives release time: decisive → short release, torn → long release.
-    """
-    if len(top_logprobs) < 2:
-        return 1.0
-    sorted_probs = sorted(
-        [math.exp(lp) for lp in top_logprobs.values()], reverse=True
-    )
-    gap = sorted_probs[0] - sorted_probs[1]
-    return min(gap / sorted_probs[0], 1.0)
-
-def gap_to_release(gap: float, min_r=0.04, max_r=0.45) -> float:
-    """
-    Invert the gap so:
-      gap ~1.0 (decisive) → short release (min_r seconds, clean note)
-      gap ~0.0 (torn)     → long release  (max_r seconds, notes blur together)
-    Adjust min_r and max_r to taste.
-    """
-    return min_r + (1.0 - gap) * (max_r - min_r)
-
-def make_envelope(total_samples, attack=0.01, decay=0.05, sustain=0.7,
-                  release=0.08, sample_rate=44100):
-    """
-    ADSR envelope as a numpy array.
-      attack  : seconds to ramp from 0 → 1.0
-      decay   : seconds to fall from 1.0 → sustain level
-      sustain : volume level held during the body (0.0–1.0)
-      release : seconds to fade from sustain → 0  (governed by top-two gap)
-    """
-    a = int(attack  * sample_rate)
-    d = int(decay   * sample_rate)
-    r = int(release * sample_rate)
-    s = max(0, total_samples - a - d - r)
-
-    envelope = np.concatenate([
-        np.linspace(0.0,     1.0,     a),   # attack
-        np.linspace(1.0,     sustain, d),   # decay
-        np.full(s,           sustain),       # sustain
-        np.linspace(sustain, 0.0,     r),   # release
-    ])
-    # Trim or pad to exact length
-    if len(envelope) < total_samples:
-        envelope = np.append(envelope, np.zeros(total_samples - len(envelope)))
-    return envelope[:total_samples]
-
-
-
-
