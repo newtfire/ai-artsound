@@ -236,7 +236,6 @@ async def handle_click():
     # initAudio() MUST be called from a user-gesture handler (this click) to
     # satisfy the browser's autoplay policy.  We pass in all tuning constants
     # from Python so the JS engine stays in sync with the values above.
-    print("handle_click fired!")
     window.initAudio(ATTACK_SECONDS, DECAY_RATE, RELEASE_SECONDS, _VOLUME)
     model = str(page["#modelSelect"].value)
     prompt   = str(page["#promptConfirm"].textContent) #uses confirm <p> so default prompt is chosen w/o input
@@ -343,7 +342,7 @@ async def handle_click():
                         rgb_string = f"rgb({r}, {g}, {b})"
                         span.style.color = rgb_string
                     output.appendChild(span)
-                    #FUNCTION FOR SOUND GO HERE!!!!!!
+                    await on_uncertainty_event(token, score, top_logprobs)
 
                 if data.get("done"):
                     break
