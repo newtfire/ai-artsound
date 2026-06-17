@@ -30,12 +30,14 @@
         let VOLUME          = 0.3;
 
         window.initAudio = function(attackSec, decayRate, releaseSec, volume) {
+            console.log("initAudio called!")
             if (_ctx && _ctx.state !== 'closed') return;
             ATTACK_SECONDS  = attackSec  ?? ATTACK_SECONDS;
             DECAY_RATE      = decayRate  ?? DECAY_RATE;
             RELEASE_SECONDS = releaseSec ?? RELEASE_SECONDS;
             VOLUME          = volume     ?? VOLUME;
             _ctx = new AudioContext();
+            console.log("initAudio settings initiated!")
         };
 
         function _stopOscillators(when) {
