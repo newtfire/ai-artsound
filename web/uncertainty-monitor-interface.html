@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+    <!-- The goal of this website is to give a user-interface to the uncertaintymonitor.py tool and art piece designed in the DIGIT Program
+    It allows one to run the script in a more friendly way. It does not allow for public deployment. -->
+    <head>
+        <title>Uncertainty Monitor</title>
+        <link rel="stylesheet" href="https://pyscript.net/releases/2026.3.1/core.css" />
+        <link rel="stylesheet" href="style.css">
+        <script type="module" src="https://pyscript.net/releases/2026.3.1/core.js"></script> <!-- errors from PyScript are thrown: still functional on Chrome -->
+         <!-- Audio engine for sonification -->
+          <!-- ebb: In the next function, we wrap the whole JS function for playing sounds in the browser in ( )s in order to protect its
+         scope so it does not interfere with other JS functions. Claude Sonnet's explanation (17 June 2026): Audio engine for sonification.
+   Wrapped in an IIFE (immediately invoked function expression) — the (function(){ ... })() pattern —
+   to keep internal audio state (_ctx, _gainNode, _osc1, _osc2) private and protected.
+   These variables must persist across calls (so playNote and triggerRelease share the same
+   AudioContext), but don't need to be visible to the rest of the page.
+   Only the three window.* functions are intentionally exposed as the public interface
+   called from Python via PyScript. -->
+    <script>
+    (function () {
+        let _ctx        = null;
+        let _gainNode   = null;
+        let _osc1       = null;
+        let _osc2       = null;
+
+        let ATTACK_SECONDS  = 0.030;
+        let DECAY_RATE      = 12.0;
+        let RELEASE_SECONDS = 0.22;
+        let VOLUME          = 0.3;
+
+        window.initAudio = function(attackSec, decayRate, releaseSec, volume) {
+            if (_ctx && _ctx.state !== 'closed') return;
+            ATTACK_SECONDS  = attackSec  ?? ATTACK_SECONDS;
+            DECAY_RATE      = decayRate  ?? DECAY_RATE;
+            RELEASE_SECONDS = releaseSec ?? RELEASE_SECONDS;
+            VOLUME          = volume     ?? VOLUME;
+            _ctx = new AudioContext();
+        };
+        
+        function _stopOscillators(when) {
+            if (_osc1) { try { _osc1.stop(when); } catch(e) {} _osc1 = null; }
+            if (_osc2) { try { _osc2.stop(when); } catch(e) {} _osc2 = null; }
+        }
+
+        window.playNote = function(freq, releaseSeconds) {
+            if (!_ctx) return;
+            const now = _ctx.currentTime;
+            _stopOscillators(now);
+            if (_gainNode) _gainNode.disconnect();
+
+            _gainNode = _ctx.createGain();
+            _gainNode.connect(_ctx.destination);
+            _gainNode.gain.setValueAtTime(0.0, now);
+
+            const attackEnd = now + ATTACK_SECONDS;
+            _gainNode.gain.linearRampToValueAtTime(VOLUME, attackEnd);
+
+            const tau = 1.0 / DECAY_RATE;
+            _gainNode.gain.setTargetAtTime(0.0, attackEnd, tau);
+
+            _osc1 = _ctx.createOscillator();
+            _osc1.type = 'sine';
+            _osc1.frequency.setValueAtTime(freq, now);
+            _osc1.connect(_gainNode);
+            _osc1.start(now);
+
+            const ot2Gain = _ctx.createGain();
+            ot2Gain.gain.setValueAtTime(0.25, now);
+            ot2Gain.connect(_gainNode);
+
+            _osc2 = _ctx.createOscillator();
+            _osc2.type = 'sine';
+            _osc2.frequency.setValueAtTime(freq * 4.0, now);
+            _osc2.connect(ot2Gain);
+            _osc2.start(now);
+        };
+
+        window.triggerRelease = function(releaseSeconds) {
+            if (!_ctx || !_gainNode) return;
+            const now = _ctx.currentTime;
+            const rel = releaseSeconds ?? RELEASE_SECONDS;
+            _gainNode.gain.cancelScheduledValues(now);
+            _gainNode.gain.setValueAtTime(_gainNode.gain.value, now);
+            _gainNode.gain.linearRampToValueAtTime(0.0, now + rel);
+            _stopOscillators(now + rel + 0.01);
+        };
+    })();
+    </script>
+
+    </head>
+    <body>
+        <h1>Uncertainty Monitor</h1>
+        <div class="before">
+            <h2>Before Use</h2>
+            <p class="before">Please consult the README before running.</p>
+        </div>
+        <div>
+            <h2>Model Selection</h2>
+            <label for="modelSelect">Choose a model:</label>
+            <select id="modelSelect">
+                <option value="qwen2.5:1.5b">Qwen 2.5 (1.5B)</option>
+                <option value="olmo2:7b">OLMo 2 (7B)</option>
+                <option value="olmo2:13b">OLMo 2 (13B)</option>
+                <option value="pleias-350m:latest">Pleias 350m</option>
+                <option value="pleias-nano:latest">Pleias Nano (1.2B)</option>
+                <option value="llama3.2:3b">Llama 3.2 (3B)</option>
+                <option value="llama3.2:1b">Llama 3.2 (1B)</option>
+            </select>
+            <p id="modelDesc">General language, web-trained.</p>
+            <!-- gives description of each model -->
+            <script>
+                const desc = document.getElementById('modelSelect');
+                
+                desc.addEventListener('change', function () {
+                    const selectedValue = this.value;
+                    
+                    if (selectedValue === 'qwen2.5:1.5b') {
+                        modelDesc.textContent = 'General language, web-trained.';
+                        tokenNote.textContent = '';
+                        document.getElementById("maxTokens").value = '200';
+                        document.getElementById("maxTokens").disabled = false;
+                        document.getElementById("temp").value = '0.8';
+                        tempNote.textContent = '';
+                        display.textContent = '0.8';
+                        tdisplay.textContent = '200';
+                    } else if (selectedValue === 'olmo2:7b') {
+                        modelDesc.textContent = 'Allen AI, open science, transparent training.';
+                        tokenNote.textContent = '';
+                        document.getElementById("maxTokens").value = '200';
+                        document.getElementById("maxTokens").disabled = false;
+                        document.getElementById("temp").value = '0.8';
+                        tempNote.textContent = '';
+                        display.textContent = '0.8';
+                        tdisplay.textContent = '200';
+                    } else if (selectedValue === 'olmo2:13b') {
+                        modelDesc.textContent = 'Allen AI, open science, larger model.';
+                        tokenNote.textContent = '';
+                        document.getElementById("maxTokens").value = '200';
+                        document.getElementById("maxTokens").disabled = false;
+                        document.getElementById("temp").value = '0.8';
+                        tempNote.textContent = '';
+                        display.textContent = '0.8';
+                        tdisplay.textContent = '200';
+                    } else if (selectedValue === 'pleias-350m:latest') {
+                        modelDesc.textContent = 'Copyright-free, literary register';
+                        tokenNote.textContent = 'NOTE! Base model will not self-terminate: Token count locked at 80. ';
+                        document.getElementById("maxTokens").value = '80';
+                        document.getElementById("maxTokens").disabled = true;
+                        document.getElementById("temp").value = '0.2';
+                        tempNote.textContent = 'PleIAs recommends low temperature.';
+                        display.textContent = '0.2';
+                        tdisplay.textContent = '60';
+                    } else if (selectedValue === 'pleias-nano:latest') {
+                        modelDesc.textContent = 'Copyright-free, RAG-specialized.';
+                        tokenNote.textContent = 'NOTE! Base model will not self-terminate: Token count locked at 60. ';
+                        document.getElementById("maxTokens").value = '60';
+                        document.getElementById("temp").value = '0.2';
+                        tempNote.textContent = 'PleIAs recommends low temperature.';
+                        document.getElementById("maxTokens").disabled = true;
+                        display.textContent = '0.2';
+                        tdisplay.textContent = '60';
+                    } else if (selectedValue === 'llama3.2:3b') {
+                        modelDesc.textContent = 'Meta, general language';
+                        tokenNote.textContent = '';
+                        document.getElementById("maxTokens").value = '200';
+                        document.getElementById("maxTokens").disabled = false;
+                        document.getElementById("temp").value = '0.8';
+                        tempNote.textContent = '';
+                        display.textContent = '0.8';
+                        tdisplay.textContent = '200';
+                    } else if (selectedValue === 'llama3.2:1b') {
+                        modelDesc.textContent = 'Meta, general language, very small';
+                        tokenNote.textContent = '';
+                        document.getElementById("maxTokens").value = '200';
+                        document.getElementById("maxTokens").disabled = false;
+                        document.getElementById("temp").value = '0.8';
+                        tempNote.textContent = '';
+                        display.textContent = '0.8';
+                        tdisplay.textContent = '200';
+                        console.log('Yay! You selected a llama model, 3.2:1b')
+                    } else {
+                        modelDesc.textContent = 'General language, web-trained.';
+                        tokenNote.textContent = '';
+                        document.getElementById("maxTokens").value = '200';
+                        document.getElementById("maxTokens").disabled = false;
+                        document.getElementById("temp").value = '0.8';
+                        tempNote.textContent = ''; //default values
+                    }
+                });</script>
+        </div>
+        <div>
+            <h2>Input Prompt</h2>
+            <label for="prompt">Prompt</label>
+            <input type="text" id="prompt" placeholder="Your prompt here...">
+            <details>
+                <summary>Best practices:</summary>
+                <ul>
+                    <li>Prompts should be open-ended: factual questions do not pose uncertainty and
+                        lead to uninteresting results.</li>
+                    <li>Asking for a certain amount of sentences (2-4) keeps the model from being
+                        too long-winded</li>
+                </ul>
+            </details>
+            <h3>Prompt to be submitted: </h3>
+            <p id="promptConfirm">Write a description of a haunted house.</p>
+            <!-- confirms what will be entered: prompt sends are taken from this line -->
+            <script>
+                const input = document.getElementById('prompt');
+                const paragraph = document.getElementById('promptConfirm');
+                
+                input.addEventListener('change', function (event) {
+                    paragraph.textContent = event.target.value;
+                });</script>
+        </div>
+        <div>
+            <h2>Other Settings</h2>
+            <button id="default">Return to Defaults</button>
+            <script>
+                const defaultButton = document.getElementById("default");
+                
+                defaultButton.addEventListener("click", () => {
+                    modelDesc.textContent = 'General language, web-trained.';
+                    tokenNote.textContent = '';
+                    document.getElementById("maxTokens").value = '200';
+                    document.getElementById("maxTokens").disabled = false;
+                    document.getElementById('modelSelect').value = 'qwen2.5:1.5b';
+                    document.getElementById("temp").value = '0.8';
+                    tempNote.textContent = '';
+                    display.textContent = '0.8';
+                    tdisplay.textContent = '200';
+                });</script>
+            <div class="sub">
+                <label for="temp">Temperature</label>
+                <input type="range" id="temp" min="0" max="1" value="0.8" step="0.01" />
+                <label for="temp">Defaults at 0.8</label>
+                <p id="tempVal">0.8</p>
+                <script>
+                    const slider = document.getElementById('temp');
+                    const display = document.getElementById('tempVal');
+                    
+                    slider.addEventListener('input', function () {
+                        display.textContent = this.value;
+                    });</script>
+                <p id="tempNote"></p>
+            </div>
+            <div class="sub">
+                <label for="maxTokens">Maximum Tokens</label>
+                <input type="range" id="maxTokens" min="20" max="300" value="200" step="10" />
+                <label for="maxTokens">Defaults at 200</label>
+                <p id="tokenVal">200</p>
+                <!-- display current -->
+                <script>
+                    const tslider = document.getElementById('maxTokens');
+                    const tdisplay = document.getElementById('tokenVal');
+                    
+                    tslider.addEventListener('input', function () {
+                        tdisplay.textContent = this.value;
+                    });</script>
+                <p id="tokenNote"></p>
+            </div>
+        </div>
+        <div class="flex"><button class="flex" id="run">Run!</button></div>
+        <script type="py" src="uncertaintyweb.py"></script>
+        <div>
+            <h2>Output</h2>
+            <div class="sub" id="output"></div>
+        </div>
+    </body>
+</html>

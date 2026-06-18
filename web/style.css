@@ -1,0 +1,117 @@
+body {
+    background-color: #221d1f;
+}
+p {
+    font-family: "Trebuchet MS";
+    color: #b5b4b5;
+}
+#promptConfirm {
+    text-align: center;
+}
+#before {
+    padding: 0.5em;
+    text-align: center;
+    background-color: #343032;
+}
+h1 {
+    text-align: center;
+    font-family: "Trebuchet MS";
+    color: #fff4e6;
+    padding: 1em;
+}
+h2 {
+    text-align: center;
+    font-family: "Trebuchet MS";
+    color: #fff4e6;
+}
+h3 {
+    text-align: center;
+    font-family: "Trebuchet MS";
+    color: #fff4e6;
+}
+label,
+details,
+summary,
+ul,
+li
+{
+    font-family: "Trebuchet MS";
+    color: #b5b4b5;
+}
+span {
+    font-family: "Trebuchet MS";
+}
+.flex {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: transparent;
+    border: none;
+
+}
+#run {
+    font-size: 36px;
+    font-family: "Trebuchet MS";
+    background-color: #ffca83;
+    padding: 0.75em 1.5em;
+    border-radius: 30px;
+    transition: all 0.3s ease;
+}
+#run:hover{
+    background-color:#b67e9a;
+    transform: translateY(-5px);
+}
+div {
+    border: 1px solid #b5b4b5;
+    padding: 1em;
+    background-color: #484345;
+    opacity: 0.75;
+    margin: 1em auto;
+    border-radius: 30px;
+    width: 45%;
+    justify-content: center;
+}
+div .sub {
+    opacity: 1;
+    background-color: #343032;
+}
+#output{
+    width:90%;
+    height:auto;
+    border-radius: 15px;
+}
+input[type = "range"] {
+    accent-color: #b67e9a;
+}
+.token {
+    position: relative;
+    cursor: pointer;
+}
+.token::after {
+    content: attr(data-possibilities);
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #f0f0f0;
+    color: #333;
+    padding: 6px 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease-in-out;
+}
+.token:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+a{
+    font-family: "Trebuchet MS";
+    color: #221d1f;
+
+}
+#centContainer {
+    text-align: center;
+    background-color: #b67e9a;;
+}
