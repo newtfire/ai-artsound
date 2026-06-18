@@ -16,7 +16,7 @@ import xml.dom.minidom as minidom
 
 PENTATONIC_INTERVALS = [0, 2, 4, 7, 9]  # semitones: C D E G A
 
-ATTACK_SECONDS = 0.030  # ramp up (longer = softer attack, avoids clicks)
+ATTACK_SECONDS = 0.060  # ramp up (longer = softer attack, avoids clicks) (originally 0.03)
 DECAY_RATE = 12.0  # marimba-style exponential decay speed (8–20)
 RELEASE_SECONDS = 0.22  # punctuation fade-out length in seconds
 _VOLUME = 0.3  # master volume 0.0–1.0
