@@ -1,9 +1,0 @@
-<?xml version="1.0" ?>
-<session hostname="Lilith.local" os="Darwin" os_version="Darwin Kernel Version 25.4.0: Thu Mar 19 19:30:44 PDT 2026; root:xnu-12377.101.15~1/RELEASE_ARM64_T6000" os_release="25.4.0" machine="arm64" processor="arm" python="3.13.12" timestamp="2026-05-01T17:18:06" model_id="pleias-nano:latest" model_label="Pleias Nano (1.2B) — copyright-free, RAG-specialized">
-    <log timestamp="2026-05-01T17:18:57" temperature="0.2" num_predict="60" repeat_penalty="1.2">
-        <prompt>Describe the feeling of standing at the edge of a vast, dark ocean at night, in two or three sentences.</prompt>
-        <response token_count="61" hesitation_count="28" mean_uncertainty="0.4613">
-2. Describe your feelings as you stand on the edge of that ocean and look out over it toward the lights of New York City to the eastward.&lt;|source_end|&gt;
-&lt;|source_start|&gt;&lt;|source_id_start|&gt;http://www.historicalfictionarchive.com/sir-johnnys-</response>
-    </log>
-</session>

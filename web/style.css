@@ -38,6 +38,10 @@ li
     font-family: "Trebuchet MS";
     color: #b5b4b5;
 }
+label {
+    white-space: nowrap;
+
+}
 span {
     font-family: "Trebuchet MS";
 }
@@ -57,8 +61,8 @@ span {
     border-radius: 30px;
     transition: all 0.3s ease;
 }
-#run:hover{
-    background-color:#b67e9a;
+#run:hover {
+    background-color: #b67e9a;
     transform: translateY(-5px);
 }
 div {
@@ -74,16 +78,25 @@ div {
 div .sub {
     opacity: 1;
     background-color: #343032;
+    width: 80%
 }
-#output{
-    width:90%;
-    height:auto;
+#output {
+    width: 90%;
+    height: auto;
     border-radius: 15px;
 }
 input[type = "range"] {
     accent-color: #b67e9a;
+    display: block;
+    margin: 0 auto;
+    flex-grow: 0.75;
+
 }
-.token {
+
+.token,
+#valDesc,
+.hesitation,
+#tempDesc{
     position: relative;
     cursor: pointer;
 }
@@ -102,16 +115,96 @@ input[type = "range"] {
     visibility: hidden;
     transition: opacity 0.2s ease-in-out;
 }
-.token:hover::after {
-    opacity: 1;
-    visibility: visible;
-}
-a{
+
+a {
     font-family: "Trebuchet MS";
     color: #221d1f;
 
 }
-#centContainer {
+#centContainer,
+.centContainer {
     text-align: center;
-    background-color: #b67e9a;;
+    background-color: #b67e9a;
+    ;
+}
+table,
+th,
+td,
+tr {
+    border-collapse: collapse;
+    border: 2px solid #fff4e6;
+
+}
+
+.hesitation::after {
+    content: "A hesitation event occurs when the calculated score is above the Uncertainty Threshold (0.55 by default).";
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #f0f0f0;
+    color: #333;
+    padding: 6px 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease-in-out;
+}
+.hesitation:hover::after,
+#valDesc:hover::after,
+.token:hover::after,
+#tempDesc:hover::after
+{
+    opacity: 1;
+    visibility: visible;
+}
+.rangeContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 70%;
+    gap: 15px;
+    background-color: transparent;
+    border: transparent;
+}
+#tokenVal,
+#tempVal {
+    text-align: center;
+}
+.defaulting {
+    color: #7d7d7d;
+    text-align: center;
+}
+#valDesc::after {
+    content: "A token is the unit used in natural language processing. They are small fragments of text, typically around 4 letters. Decreasing the maximum amount of tokens shortens the generated text.";
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-30%);
+    background-color: #f0f0f0;
+    color: #333;
+    padding: 6px 12px;
+    border-radius: 4px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease-in-out;
+    text-align: left;
+    font-size: 0.75em;
+}
+#tempDesc::after {
+    content: "A token with a lower temperature value is more likely to be chosen. One with a higher temperature value is less likely, and thus, more rare. Choosing a higher temperature will incentivize the model to choose less predictable results.";
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-30%);
+    background-color: #f0f0f0;
+    color: #333;
+    padding: 6px 12px;
+    border-radius: 4px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease-in-out;
+    text-align: left;
+    font-size: 0.75em;
 }

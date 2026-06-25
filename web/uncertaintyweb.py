@@ -91,7 +91,7 @@ def make_envelope(total_samples, attack=0.01, decay=0.05, sustain=0.7,
       sustain : volume level held during the body (0.0–1.0)
       release : seconds to fade from sustain → 0  (governed by top-two gap)
     Claude Sonnet's NOTE: This function is retained from the original for reference / future use
-    (e.g. offline rendering or visualisation). In the web version the equivalent
+    (e.g. offline rendering or visualization). In the web version the equivalent
     envelope is computed by the Web Audio API inside the JS engine above.
     """
     # numpy may not be available in Pyodide without explicit import
@@ -225,7 +225,7 @@ def createLog(token_count, hesitation_count, mean_uncertainty):
     link.href = url
     link.id = "logLink"
     link.download = f"log_{timestamp}.xml"
-    link.textContent = "Download This Log"
+    link.textContent = "Download this log as XML"
     htmlbreak = js.document.createElement("br")
     js.document.getElementById("output").appendChild(htmlbreak)
     js.document.getElementById("output").appendChild(p)
@@ -258,6 +258,12 @@ async def handle_click():
     }
 
     output = js.document.getElementById("output")
+    outTable = js.document.getElementById("outTable")
+    fromLog = document.querySelectorAll('.fromLog')
+    for element in fromLog:
+        element.remove()
+
+    print(fromLog)
     output.innerHTML = ""
 
     #logging - could implement in output?
@@ -294,7 +300,7 @@ async def handle_click():
                 data = json.loads(line)
                 token = data.get("response", "")
 
-
+                addHesitation = 0
                 logprob_data = data.get("logprobs") or []
                 top_logprobs = {}
                 if isinstance(logprob_data, list) and logprob_data:
@@ -306,23 +312,38 @@ async def handle_click():
                 score = compute_uncertainty(top_logprobs)
 
                 # Dramatic pause from uncertainty monitor (Adjust?)
-                token_count += 1
                 total_uncertainty += score
                 if score > UNCERTAINTY_THRESHOLD:
                     hesitation_count += 1
+                    addHesitation = 1
                     pause = MAX_PAUSE_SECONDS * (score - UNCERTAINTY_THRESHOLD) / (1.0 - UNCERTAINTY_THRESHOLD)
                     await asyncio.sleep(pause)
 
                 # Real-time appearing + color coding
                 if token:
+                    token_count += 1
+                    numbering = js.document.createElement("td")
+                    numbering.textContent = (str(token_count))
                     span = js.document.createElement("span")
+                    tableOptions = js.document.createElement("td")
+                    tableBar = js.document.createElement("td")
+                    tableRow = js.document.createElement("tr")
+                    tableRow.className = "fromLog"
                     span.textContent = token
+                    tableToken = js.document.createElement("td")
+                    tableToken.textContent = token
                     span.dataset.score = str(round(score, 4))
+                    tableScore = js.document.createElement("td")
+                    tableScore.textContent= str(round(score, 4))
                     span.className = "token"
                     span.dataset.possibilities = "\n".join(
     f"{possibles}  ({math.exp(probs)*100:.1f}%)"
     for possibles, probs in sorted(top_logprobs.items(), key=lambda x: -x[1])
 )
+                    tableOptions.textContent = "\t".join(
+                        f"{possibles}  ({math.exp(probs) * 100:.1f}%)"
+                        for possibles, probs in sorted(top_logprobs.items(), key=lambda x: -x[1])
+                    )
                     if score < 0.5:
                         t = score / 0.5
                         r = int(100 + t * (255 - 100))
@@ -331,6 +352,7 @@ async def handle_click():
 
                         rgb_string = f"rgb({r}, {g}, {b})"
                         span.style.color = rgb_string
+                        tableBar.style.color = rgb_string
 
                     else:
                         t = (score - 0.5) / 0.5
@@ -340,7 +362,31 @@ async def handle_click():
 
                         rgb_string = f"rgb({r}, {g}, {b})"
                         span.style.color = rgb_string
+                        tableBar.style.color = rgb_string
+
+
+                    tableRow.id = str(token_count)
+                    outHesitation = js.document.createElement('td')
                     output.appendChild(span)
+                    outTable.appendChild(tableRow)
+                    tableRow.appendChild(numbering)
+                    tableRow.appendChild(tableToken)
+                    tableRow.appendChild(tableScore)
+                    for _ in range(math.trunc(score*10)):
+                        tableBar.textContent += "▓"
+                    for _ in range(10-math.trunc(score*10)):
+                        tableBar.textContent += "░"
+                    tableRow.appendChild(tableBar)
+                    tableRow.appendChild(tableOptions)
+                    if addHesitation == 1:
+                        outHesitation.textContent = "< Hesitation Event"
+                        outHesitation.style.color = "purple"
+                        outHesitation.className = "hesitation"
+                        tableRow.appendChild(outHesitation)
+                    else:
+                        outHesitation.textContent = ""
+                        tableRow.appendChild(outHesitation)
+
                     await on_uncertainty_event(token, score, top_logprobs)
 
                 if data.get("done"):
@@ -350,3 +396,10 @@ async def handle_click():
         output.textContent = f"Error: {str(e)}"
 
     createLog(token_count, hesitation_count, total_uncertainty/token_count if token_count > 0 else 0.0)
+    svgContainer = js.document.createElement("a")
+    svgContainer.id = "svgContainer"
+    svgLink = js.document.createElement("p")
+    svgLink.textContent = "Download this log as SVG table"
+    svgLink.className = "centContainer"
+    js.document.getElementById("output").append(svgContainer)
+    js.document.getElementById("svgContainer").append(svgLink)
