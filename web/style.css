@@ -61,7 +61,7 @@ span {
     border-radius: 30px;
     transition: all 0.3s ease;
 }
-#run:hover {
+#run:hover:enabled {
     background-color: #b67e9a;
     transform: translateY(-5px);
 }
@@ -101,7 +101,7 @@ input[type = "range"] {
     cursor: pointer;
 }
 .token::after {
-    content: attr(data-possibilities);
+    content: attr(data-tooltip);
     position: absolute;
     bottom: 120%;
     left: 50%;

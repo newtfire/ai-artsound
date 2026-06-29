@@ -106,7 +106,8 @@
         <div class="before">
             <h2>Before Use</h2>
             <p class="before">Please consult the README before running.</p>
-            <p>This is a tool for visualizing a language model's uncertainty in real time as it generates text.</p>
+            <p>This is a tool for visualizing a language model's uncertainty in real time as it
+                generates text.</p>
         </div>
         <div>
             <h2>Model Selection</h2>
@@ -230,25 +231,13 @@
         <div>
             <h2>Other Settings</h2>
             <p class="defaulting">Hover to view what they do!</p>
-            <script>
-                const defaultButton = document.getElementById("default");
-                
-                defaultButton.addEventListener("click", () => {
-                    modelDesc.textContent = 'General language, web-trained.';
-                    tokenNote.textContent = '';
-                    document.getElementById("maxTokens").value = '200';
-                    document.getElementById("maxTokens").disabled = false;
-                    document.getElementById('modelSelect').value = 'qwen2.5:1.5b';
-                    document.getElementById("temp").value = '0.8';
-                    tempNote.textContent = '';
-                    display.textContent = '0.8';
-                    tdisplay.textContent = '200';
-                });</script>
             <div class="sub">
                 <h3 id="tempDesc">Temperature</h3>
-               <div class="rangeContainer"> <label for="temp">0</label>
-                <input type="range" id="temp" min="0" max="1" value="0.8" step="0.01" />
-                <label for="temp">1</label></div>
+                <div class="rangeContainer">
+                    <label for="temp">0</label>
+                    <input type="range" id="temp" min="0" max="1" value="0.8" step="0.01" />
+                    <label for="temp">1</label>
+                </div>
                 <p id="tempVal">0.8</p>
                 <p class="defaulting">Defaults at 0.8</p>
                 <script>
@@ -262,9 +251,11 @@
             </div>
             <div class="sub">
                 <h3 id="valDesc">Maximum Tokens</h3>
-                <div class="rangeContainer"><label for="maxTokens">20</label>
-                <input type="range" id="maxTokens" min="20" max="300" value="200" step="10" />
-                <label for="maxTokens">300</label></div>
+                <div class="rangeContainer">
+                    <label for="maxTokens">20</label>
+                    <input type="range" id="maxTokens" min="20" max="300" value="200" step="10" />
+                    <label for="maxTokens">300</label>
+                </div>
                 <p id="tokenVal">200</p>
                 <p class="defaulting">Defaults at 200</p>
                 <!-- display current -->
@@ -278,6 +269,18 @@
                 <p id="tokenNote"></p>
             </div>
             <button id="default">Return to Defaults</button>
+            <script>
+                document.getElementById("default").addEventListener("click", () => {
+                    modelDesc.textContent = 'General language, web-trained.';
+                    tokenNote.textContent = '';
+                    document.getElementById("maxTokens").value = '200';
+                    document.getElementById("maxTokens").disabled = false;
+                    document.getElementById('modelSelect').value = 'qwen2.5:1.5b';
+                    document.getElementById("temp").value = '0.8';
+                    tempNote.textContent = '';
+                    display.textContent = '0.8';
+                    tdisplay.textContent = '200';
+                });</script>
         </div>
         <div class="flex">
             <button class="flex" id="run">Run!</button>

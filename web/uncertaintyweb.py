@@ -210,9 +210,22 @@ def createLog(token_count, hesitation_count, mean_uncertainty):
     prompt = ET.SubElement(log, "prompt")
     prompt.text = str(page["#promptConfirm"].textContent)
     response = ET.SubElement(log, "response", token_count=str(token_count), hesitation_count=str(hesitation_count), mean_uncertainty=str(round(mean_uncertainty, 4)))
-    response.text = ""
     for span in js.document.querySelectorAll("#output .token"):
-        response.text += span.textContent
+        token_el = ET.SubElement(response, "token")
+        chosen = ET.SubElement(token_el, "chosen")
+        chosen.text = span.textContent.replace("\x00", "")  # remove null
+        chosen.set("score", span.dataset.score)
+        i = 0
+        while True:
+            t = span.getAttribute(f"data-token{i}")
+            if not t:
+                break
+            p = span.getAttribute(f"data-prob{i}")
+            candidate_el = ET.SubElement(token_el, "candidate", rank=str(i + 1))
+            candidate_el.set("token", t)
+            candidate_el.set("probability", f"{p}")
+            i += 1
+
     string = ET.tostring(session, encoding="utf-8", method="xml").decode("utf-8")
     parse = minidom.parseString(string)
     finalstring = parse.toprettyxml(indent="  ")
@@ -226,14 +239,16 @@ def createLog(token_count, hesitation_count, mean_uncertainty):
     link.id = "logLink"
     link.download = f"log_{timestamp}.xml"
     link.textContent = "Download this log as XML"
+    p.appendChild(link)
     htmlbreak = js.document.createElement("br")
     js.document.getElementById("output").appendChild(htmlbreak)
     js.document.getElementById("output").appendChild(p)
-    js.document.getElementById("centContainer").appendChild(link)
 
 
 @when("click", "#run") # retrieves values from webpage
 async def handle_click():
+    btn = document.getElementById("run")
+    btn.disabled = True
     # initAudio() MUST be called from a user-gesture handler (this click) to
     # satisfy the browser's autoplay policy.  We pass in all tuning constants
     # from Python so the JS engine stays in sync with the values above.
@@ -279,6 +294,21 @@ async def handle_click():
             headers={"Content-Type": "application/json"},
             body=json.dumps(payload)
         )
+
+        #Error fallbacks
+        if response.status == 404:
+            error_p = js.document.createElement("p")
+            error_p.textContent = f"Error 404: Model '{model}' not found. Is it pulled in Ollama?"
+            output.appendChild(error_p)
+            btn.disabled = False
+            return
+
+        if not response.ok:
+            error_p = js.document.createElement("p")
+            error_p.textContent = f"Error {response.status}: Ollama returned an unexpected response."
+            output.appendChild(error_p)
+            btn.disabled = False
+            return
 
         reader = response.js_response.body.getReader()
         decoder = js.TextDecoder.new("utf-8")
@@ -336,14 +366,20 @@ async def handle_click():
                     tableScore = js.document.createElement("td")
                     tableScore.textContent= str(round(score, 4))
                     span.className = "token"
-                    span.dataset.possibilities = "\n".join(
-    f"{possibles}  ({math.exp(probs)*100:.1f}%)"
-    for possibles, probs in sorted(top_logprobs.items(), key=lambda x: -x[1])
-)
+                    sorted_logprobs = sorted(top_logprobs.items(), key=lambda x: -x[1])
+                    sorted_with_pct = [(tok, math.exp(lp)) for tok, lp in sorted_logprobs]
+
+                    for i, (possibles, pct) in enumerate(sorted_with_pct):
+                        span.setAttribute(f"data-token{i}", possibles)
+                        span.setAttribute(f"data-prob{i}", f"{round(pct,4)}")
+
+                    span.setAttribute("data-tooltip", "  |  ".join(
+                        f"{possibles}  ({pct:.1f}%)" for possibles, pct in sorted_with_pct
+                    ))
                     tableOptions.textContent = "\t".join(
-                        f"{possibles}  ({math.exp(probs) * 100:.1f}%)"
-                        for possibles, probs in sorted(top_logprobs.items(), key=lambda x: -x[1])
+                        f"{possibles}  ({pct:.1f}%)" for possibles, pct in sorted_with_pct
                     )
+
                     if score < 0.5:
                         t = score / 0.5
                         r = int(100 + t * (255 - 100))
@@ -372,10 +408,8 @@ async def handle_click():
                     tableRow.appendChild(numbering)
                     tableRow.appendChild(tableToken)
                     tableRow.appendChild(tableScore)
-                    for _ in range(math.trunc(score*10)):
-                        tableBar.textContent += "▓"
-                    for _ in range(10-math.trunc(score*10)):
-                        tableBar.textContent += "░"
+                    filled = math.trunc(score * 10)
+                    tableBar.textContent = "▓" * filled + "░" * (10 - filled)
                     tableRow.appendChild(tableBar)
                     tableRow.appendChild(tableOptions)
                     if addHesitation == 1:
@@ -390,16 +424,14 @@ async def handle_click():
                     await on_uncertainty_event(token, score, top_logprobs)
 
                 if data.get("done"):
+                    btn.disabled = False
                     break
 
+
     except Exception as e:
-        output.textContent = f"Error: {str(e)}"
+        error_p = js.document.createElement("p")
+        error_p.textContent = f"Error: {str(e)}"
+        output.appendChild(error_p)
+        btn.disabled = False
 
     createLog(token_count, hesitation_count, total_uncertainty/token_count if token_count > 0 else 0.0)
-    svgContainer = js.document.createElement("a")
-    svgContainer.id = "svgContainer"
-    svgLink = js.document.createElement("p")
-    svgLink.textContent = "Download this log as SVG table"
-    svgLink.className = "centContainer"
-    js.document.getElementById("output").append(svgContainer)
-    js.document.getElementById("svgContainer").append(svgLink)
