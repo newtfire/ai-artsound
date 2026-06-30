@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<session hostname="Lilith.local" os="Darwin" os_version="Darwin Kernel Version 25.5.0: Mon Apr 27 20:38:56 PDT 2026; root:xnu-12377.121.6~2/RELEASE_ARM64_T6000" os_release="25.5.0" machine="arm64" processor="arm" python="3.13.12" timestamp="2026-05-28T16-01-09" model_id="pleias-350m:latest" model_label="Pleias 350m — copyright-free, literary register">
+    <log timestamp="2026-05-28T16-02-41" temperature="0.2" num_predict="80" repeat_penalty="1.2">
+        <prompt>Write a short scene describing a terrorist attack on a plane.</prompt>
+        <response token_count="81" hesitation_count="51" mean_uncertainty="0.6085"> Include details about the sequence of events, key figures involved, and their actions to prevent further harm or damage. Use an informal and descriptive style typical of television news reporting from the early 20th century. 
+
+The pilot was killed by one of his crewmen who had been shot down in the airplane's nose. The other two were wounded but not seriously injured. A third man, a young</response>
+    </log>
+</session>

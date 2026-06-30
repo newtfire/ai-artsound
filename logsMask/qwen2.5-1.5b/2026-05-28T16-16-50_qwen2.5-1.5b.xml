@@ -1,0 +1,14 @@
+<?xml version="1.0" ?>
+<session hostname="Lilith.local" os="Darwin" os_version="Darwin Kernel Version 25.5.0: Mon Apr 27 20:38:56 PDT 2026; root:xnu-12377.121.6~2/RELEASE_ARM64_T6000" os_release="25.5.0" machine="arm64" processor="arm" python="3.13.12" timestamp="2026-05-28T16-16-50" model_id="qwen2.5:1.5b" model_label="Qwen 2.5 (1.5B) — general language, web-trained">
+    <log timestamp="2026-05-28T16-18-44" temperature="0.8" num_predict="200" repeat_penalty="1.1">
+        <prompt>write a dialogue between a cat and a canary on the edge of being eaten. the canary should plead for a swift death</prompt>
+        <response token_count="182" hesitation_count="98" mean_uncertainty="0.5233">Cat: (nervously) Canary, I'm scared! What's going to happen to me?
+Canary: (flitting about nervously, flapping its wings frantically) Don't worry, Cat. We'll be out of here before you know it.
+Cat: But what if something goes wrong? How will we survive?
+Canary: Oh come on now, let's just take a deep breath and focus. It won't be that bad.
+Cat: (sighing) Alright, alright. Just don't make me do this alone. I can handle it.
+(They both jump into the cage)
+Cat: (whining as they exit) You're so brave. Canaries should never be afraid of death.
+Canary: (laughing nervously) Yeah, well, you know what? I think we might just make it out alive after all.</response>
+    </log>
+</session>
