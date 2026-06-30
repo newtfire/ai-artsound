@@ -9,7 +9,7 @@ import colorsys
 text_object = NRCLex()
 
 #get logs
-directory = Path("logs")
+directory = Path("logsMask")
 
 def getInternalResponses(direct):
     responses = []
