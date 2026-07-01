@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400">
+<defs>
+<pattern id="fear" width="80" height="20" patternTransform="rotate(130)" patternUnits="userSpaceOnUse"><rect width="100%" height="100%" fill="rgb(178, 119, 254)"/><path fill="none" stroke="rgb(157.0357664233577,81.97226277372263,253.7277372262774)" stroke-width="4.5" d="M-20.133 4.568C-13.178 4.932-6.452 7.376 0 10s13.036 5.072 20 5c6.967-.072 13.56-2.341 20-5s13.033-4.928 20-5c6.964-.072 13.548 2.376 20 5s13.178 5.068 20.133 5.432"/></pattern>
+ </defs>
+  <rect width="300" height="400" rx="15" ry="5" fill="url(#fear)"/>
+<path d="M 50 250 Q 150 240.69767441860466 250 250" fill="white" stroke="white" stroke-width="2" stroke-linecap="round" />
+<rect x="0%" y="25.7%" width="140" height="71.5" rx="15" ry="5" fill="rgb(77,137, 0)" />
+<rect x="55%" y="24.3%" width="140" height="71.5" rx="15" ry="5" fill="rgb(77,137, 0)"/>
+
+<ellipse rx="35.0" ry="11.5" cx="25%" cy="35.7%" fill="white" stroke="white" stroke-width="2"/>
+<ellipse rx="35.0" ry="11.5" cx="75%" cy="34.3%" fill="white" stroke="white" stroke-width="2"/>
+</svg>
+    

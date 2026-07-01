@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400">
+<defs>
+<pattern id="trust" width="26" height="20" patternTransform="rotate(135)scale(2)" patternUnits="userSpaceOnUse"><rect width="100%" height="100%" fill="rgb(71, 71, 255)"/><path fill="none" stroke="rgb(38.40000000000004,38.40000000000004,254.99999999999997)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6.25 10h13.5M13 3.25v13.5"/></pattern>
+ </defs>
+  <rect width="300" height="400" rx="20" ry="15" fill="url(#trust)"/>
+<path d="M 50 250 Q 150 222.22222222222223 250 250" fill="white" stroke="white" stroke-width="2" stroke-linecap="round" />
+<rect x="0%" y="25.7%" width="140" height="81.0" rx="20" ry="15" fill="rgb(183,184, 0)" />
+<rect x="55%" y="24.3%" width="140" height="81.0" rx="20" ry="15" fill="rgb(183,184, 0)"/>
+
+<ellipse rx="34.5" ry="21.0" cx="25%" cy="35.7%" fill="white" stroke="white" stroke-width="2"/>
+<ellipse rx="34.5" ry="21.0" cx="75%" cy="34.3%" fill="white" stroke="white" stroke-width="2"/>
+</svg>
+    

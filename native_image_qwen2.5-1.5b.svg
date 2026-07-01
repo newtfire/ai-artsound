@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400">
+<defs>
+<pattern id="anticipation" width="20" height="20" patternTransform="scale(2)" patternUnits="userSpaceOnUse"><rect width="100%" height="100%" fill="rgb(124, 50, 255)"/><path fill="none" stroke="rgb(104.50975609756117,19.500000000000014,254.99999999999997)" stroke-linecap="square" stroke-width="2.5" d="M3.25 10h13.5M10 3.25v13.5"/></pattern>
+ </defs>
+  <rect width="300" height="400" rx="220" ry="155" fill="url(#anticipation)"/>
+<path d="M 50 250 Q 150 232.89473684210526 250 250" fill="white" stroke="white" stroke-width="2" stroke-linecap="round" />
+<rect x="0%" y="30.9%" width="140" height="75.5" rx="220" ry="155" fill="rgb(130,205, 0)" />
+<rect x="55%" y="19.1%" width="140" height="75.5" rx="220" ry="155" fill="rgb(130,205, 0)"/>
+
+<ellipse rx="24.0" ry="15.5" cx="25%" cy="40.9%" fill="white" stroke="white" stroke-width="2"/>
+<ellipse rx="24.0" ry="15.5" cx="75%" cy="29.1%" fill="white" stroke="white" stroke-width="2"/>
+</svg>
+    
