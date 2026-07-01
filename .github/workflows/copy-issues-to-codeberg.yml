@@ -1,0 +1,23 @@
+name: Copy issue to Codeberg
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  copy-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create matching issue on Codeberg
+        run: |
+          curl -sf -X POST "https://codeberg.org/api/v1/repos/newtfire/ai-artsound/issues" \
+            -H "Authorization: token ${CODEBERG_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+                  --arg title "$TITLE" \
+                  --arg body "$BODY" \
+                  '{title: $title, body: $body}')"
+        env:
+          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+          TITLE: ${{ github.event.issue.title }}
+          BODY: "${{ github.event.issue.body }}\n\n---\n*Originally opened on GitHub: ${{ github.event.issue.html_url }}*"

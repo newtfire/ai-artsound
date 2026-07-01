@@ -1,0 +1,24 @@
+name: Sync to Codeberg
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:  # lets you trigger it manually from the Actions tab
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history, not a shallow clone — needed for a real push
+
+      - name: Push to Codeberg
+        run: |
+          git remote add codeberg https://${CODEBERG_USER}:${CODEBERG_TOKEN}@codeberg.org/newtfire/ai-artsound.git
+          git push codeberg --all
+          git push codeberg --tags
+        env:
+          CODEBERG_USER: ${{ secrets.CODEBERG_USER }}
+          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
